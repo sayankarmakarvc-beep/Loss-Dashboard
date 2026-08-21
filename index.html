@@ -841,15 +841,23 @@ const RM_COLORS = {
 };
 const PALETTE = ["#2ee6d6","#ff5470","#ffb545","#a78bfa","#5eeb8f","#ff7ac6","#5eb3ff","#f0d64a","#4dd0e1","#ff8a65"];
 
+// Sheet-derived strings (hub/RM/AM/partner names) get interpolated into
+// innerHTML for table rendering — escape them so a stray "<" typed into a
+// sheet cell can't break markup.
+function escapeHtml(str){
+  if(str===null || str===undefined) return '';
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 function fmtVal(v, unit){
   if(v===null || v===undefined || isNaN(v)) return "—";
   if(unit==="%") return v.toFixed(2)+"%";
   if(unit==="₹L"){
-    const cr = v/100;
-    if(Math.abs(cr) >= 1) return "₹"+Math.round(cr).toLocaleString('en-IN')+"Cr";
-    return "₹"+Math.round(v)+"L";
+    const abs = Math.abs(v);
+    if(abs >= 100) return "₹"+(v/100).toLocaleString('en-IN',{maximumFractionDigits:2})+"Cr";
+    if(abs >= 1) return "₹"+v.toLocaleString('en-IN',{maximumFractionDigits:2})+"L";
+    return "₹"+Math.round(v*100000).toLocaleString('en-IN');
   }
-  return Math.round(v).toLocaleString();
+  return Math.round(v).toLocaleString('en-IN');
 }
 function fmtMoney(v){ return fmtVal(v, "₹L"); }
 // Short label for chart data-labels: caller passes the metric's unit so % / count / ₹L all compact correctly
@@ -858,10 +866,10 @@ function fmtCompact(v, unit){
   if(unit==='%') return v.toFixed(1)+'%';
   if(unit==='₹L') return fmtVal(v, '₹L');
   const abs = Math.abs(v);
-  if(abs >= 10000000) return Math.round(v/10000000)+'Cr';
-  if(abs >= 100000) return Math.round(v/100000)+'L';
-  if(abs >= 1000) return Math.round(v/1000)+'K';
-  return Math.round(v).toLocaleString();
+  if(abs >= 10000000) return (v/10000000).toLocaleString('en-IN',{maximumFractionDigits:1})+'Cr';
+  if(abs >= 100000) return (v/100000).toLocaleString('en-IN',{maximumFractionDigits:1})+'L';
+  if(abs >= 1000) return (v/1000).toLocaleString('en-IN',{maximumFractionDigits:1})+'K';
+  return Math.round(v).toLocaleString('en-IN');
 }
 if(window.ChartDataLabels) Chart.register(window.ChartDataLabels);
 Chart.defaults.set('plugins.datalabels', { display:false }); // opt-in per chart
@@ -1044,7 +1052,7 @@ function drillHub(hub){
   dm.sub.textContent = `${hub.type||'—'} · Partner: ${hub.partner||'—'} · AM: ${hub.am||'—'}`;
   dm.stats.innerHTML = [
     statTile('PRC Adherence', hub.prc!=null ? hub.prc.toFixed(2)+'%' : '—'),
-    statTile('Untraceable (YTD)', hub.untrace.toLocaleString()),
+    statTile('Untraceable (YTD)', hub.untrace.toLocaleString('en-IN')),
     statTile('SPF Loss (YTD)', fmtMoney(hub.spf)),
     statTile('Fraud Loss (YTD)', fmtMoney(hub.fraud)),
   ].join('');
@@ -1094,9 +1102,9 @@ function drillGroup(dimLabel, dimIdx, key, hubRawRows){
   dm.title.textContent = key;
   dm.sub.textContent = `${rows.length} hub${rows.length===1?'':'s'}`;
   dm.stats.innerHTML = [
-    statTile('Hub count', rows.length.toLocaleString()),
+    statTile('Hub count', rows.length.toLocaleString('en-IN')),
     statTile('Avg PRC Adherence', prcN? (prcSum/prcN).toFixed(2)+'%' : '—'),
-    statTile('Untraceable (YTD)', untrace.toLocaleString()),
+    statTile('Untraceable (YTD)', untrace.toLocaleString('en-IN')),
     statTile('SPF + Fraud Loss', fmtMoney(spf+fraud)),
   ].join('');
   dm.extra.innerHTML = '';
@@ -1439,9 +1447,12 @@ function initDashboard(){
         onClick:(evt,els)=>{ if(els.length) drillRmMetric(datasets[els[0].datasetIndex].label, metric); } }
     });
 
-    // MoM delta chart — per-RM latest MoM% for the selected metric
+    // MoM delta chart — per-RM latest MoM% for the selected metric.
+    // Respects the Region filter: was hardcoded to DATA.rms before, so this
+    // chart (and the table below) silently ignored the Region dropdown while
+    // the line chart above it did honor it.
     destroyChart('m_delta');
-    const deltaData = DATA.rms.map(rm=>{
+    const deltaData = rmsToShow.map(rm=>{
       const s = monthlySeries(metric, rm);
       if(s.values.length<2) return 0;
       const last = s.values[s.values.length-1], prev = s.values[s.values.length-2];
@@ -1450,18 +1461,18 @@ function initDashboard(){
     });
     const lastMonthLabel = monthsSorted.length ? MONTH_NAMES[monthsSorted[monthsSorted.length-1]] : '';
     charts.m_delta = new Chart(document.getElementById('m_deltaChart'), {
-      type:'bar', data:{ labels: DATA.rms, datasets:[{ label:'MoM % change', data: deltaData, backgroundColor: deltaData.map(v=> isBadDelta(meta,v) ? '#ff3b30cc' : '#34c759cc'), borderRadius:6 }]},
+      type:'bar', data:{ labels: rmsToShow, datasets:[{ label:'MoM % change', data: deltaData, backgroundColor: deltaData.map(v=> isBadDelta(meta,v) ? '#ff3b30cc' : '#34c759cc'), borderRadius:6 }]},
       options:{...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:false},
         datalabels:{ display:true, color:'#1c1c1e', font:{family:'JetBrains Mono', size:11, weight:700}, anchor:'end', align:'end', formatter:v=>v.toFixed(1)+'%' } }, indexAxis:'y',
-        onClick:(evt,els)=>{ if(els.length) drillRmMetric(DATA.rms[els[0].index], metric); } }
+        onClick:(evt,els)=>{ if(els.length) drillRmMetric(rmsToShow[els[0].index], metric); } }
     });
 
-    // table: months x RMs
+    // table: months x RMs (same Region-filter fix as above)
     const table = document.getElementById('m_table');
     const theadRow = ['<th>RM</th>', ...monthsSorted.map(m=>`<th>${MONTH_NAMES[m]} '26</th>`)].join('');
     table.querySelector('thead').innerHTML = `<tr>${theadRow}</tr>`;
     document.getElementById('m_tableTag').textContent = meta.label;
-    const bodyRows = DATA.rms.map(rm=>{
+    const bodyRows = rmsToShow.map(rm=>{
       const s = monthlySeries(metric, rm);
       const cells = monthsSorted.map(mo=>{
         const idx = s.months.indexOf(mo);
@@ -1470,10 +1481,12 @@ function initDashboard(){
       }).join('');
       return `<tr data-rm="${rm}"><td class="name" style="color:${RM_COLORS[rm]}">${rm}</td>${cells}</tr>`;
     });
-    // Grand total row
-    const gs = monthlySeries(metric, "Grand Total");
-    const gtCells = monthsSorted.map(mo=>{ const idx=gs.months.indexOf(mo); const v=idx>=0?gs.values[idx]:null; return `<td>${fmtVal(v, meta.unit)}</td>`; }).join('');
-    bodyRows.push(`<tr data-rm="Grand Total"><td class="name" style="color:#1c1c1e">Grand Total</td>${gtCells}</tr>`);
+    // Grand total row (only meaningful when showing every region)
+    if(mState.rm==="Grand Total"){
+      const gs = monthlySeries(metric, "Grand Total");
+      const gtCells = monthsSorted.map(mo=>{ const idx=gs.months.indexOf(mo); const v=idx>=0?gs.values[idx]:null; return `<td>${fmtVal(v, meta.unit)}</td>`; }).join('');
+      bodyRows.push(`<tr data-rm="Grand Total"><td class="name" style="color:#1c1c1e">Grand Total</td>${gtCells}</tr>`);
+    }
     table.querySelector('tbody').innerHTML = bodyRows.join('');
     table.querySelectorAll('tbody tr').forEach(tr=>{
       tr.addEventListener('click', ()=> drillRmMetric(tr.dataset.rm, metric));
@@ -1690,22 +1703,22 @@ function initDashboard(){
       const prcBadge = r.prc==null?'':(r.prc>=99.5?'ok':r.prc>=98?'warn':'crit');
       if(hState.groupBy==='hub'){
         return `<tr data-idx="${i}">
-          <td class="name">${r.hub}</td>
-          <td style="color:${RM_COLORS[r.rm]||'#78766f'}">${r.rm||'—'}</td>
-          <td>${r.am||'—'}</td>
-          <td><span class="pill-type">${r.type||'—'}</span></td>
-          <td>${r.partner||'—'}</td>
+          <td class="name">${escapeHtml(r.hub)}</td>
+          <td style="color:${RM_COLORS[r.rm]||'#78766f'}">${escapeHtml(r.rm)||'—'}</td>
+          <td>${escapeHtml(r.am)||'—'}</td>
+          <td><span class="pill-type">${escapeHtml(r.type)||'—'}</span></td>
+          <td>${escapeHtml(r.partner)||'—'}</td>
           <td>${r.prc!=null?`<span class="badge ${prcBadge}">${r.prc.toFixed(2)}%</span>`:'—'}</td>
-          <td>${r.untrace.toLocaleString()}</td>
+          <td>${r.untrace.toLocaleString('en-IN')}</td>
           <td>${fmtMoney(r.spf)}</td>
           <td>${fmtMoney(r.fraud)}</td>
         </tr>`;
       }
       return `<tr data-idx="${i}">
-        <td class="name">${r.key}</td>
+        <td class="name">${escapeHtml(r.key)}</td>
         <td>${r.hubcount}</td>
         <td>${r.prc!=null?`<span class="badge ${prcBadge}">${r.prc.toFixed(2)}%</span>`:'—'}</td>
-        <td>${r.untrace.toLocaleString()}</td>
+        <td>${r.untrace.toLocaleString('en-IN')}</td>
         <td>${fmtMoney(r.spf)}</td>
         <td>${fmtMoney(r.fraud)}</td>
       </tr>`;
@@ -1734,7 +1747,7 @@ function initDashboard(){
      metric (same 12 metrics HUB.rows carries, see pull_data.py PRIMARY_METRICS).
      ====================================================================== */
   const hlHubList = document.getElementById('hl_hubList');
-  hlHubList.innerHTML = HUB.rows.map(h=>`<option value="${h[1]}">`).join('');
+  hlHubList.innerHTML = HUB.rows.map(h=>`<option value="${escapeHtml(h[1])}">`).join('');
 
   document.getElementById('hl_search').addEventListener('input', debounce(e=>{
     renderHubLookupTab(e.target.value.trim());
@@ -1973,14 +1986,17 @@ function initDashboard(){
   function renderFullShare(){
     destroyChart('f_share');
     const metric = fState.metric, meta = METRIC_META[metric];
+    // Region-filter fix: was hardcoded to DATA.rms, so this doughnut always
+    // showed every region even when a single region was selected above.
+    const rmsForShare = fState.rm==="Grand Total" ? DATA.rms : [fState.rm];
     document.getElementById('f_doughnutSub').textContent = 'YTD ' + (meta.unit==='%'?'average':'sum') + ' by region';
-    const vals = DATA.rms.map(rm => meta.unit==='%' ? (ytdAvg(metric,rm)||0) : ytdSum(metric,rm));
+    const vals = rmsForShare.map(rm => meta.unit==='%' ? (ytdAvg(metric,rm)||0) : ytdSum(metric,rm));
     const valsTotal = vals.reduce((a,b)=>a+(b||0),0);
-    charts.f_share = new Chart(document.getElementById('f_shareChart'), { type:'doughnut', data:{labels:DATA.rms, datasets:[{data:vals, backgroundColor:DATA.rms.map(r=>RM_COLORS[r]), borderColor:'#ffffff', borderWidth:3, hoverOffset:8}]},
+    charts.f_share = new Chart(document.getElementById('f_shareChart'), { type:'doughnut', data:{labels:rmsForShare, datasets:[{data:vals, backgroundColor:rmsForShare.map(r=>RM_COLORS[r]), borderColor:'#ffffff', borderWidth:3, hoverOffset:8}]},
       options:{responsive:true, maintainAspectRatio:false, cutout:'62%', plugins:{legend:{position:'right', labels:{color:'#78766f', font:{size:10.5}, boxWidth:10, padding:10}}, tooltip:chartDefaults.plugins.tooltip,
         datalabels:{ display:true, color:'#1c1c1e', font:{family:'JetBrains Mono', size:10.5, weight:700}, formatter:v=>fmtCompact(v, meta.unit) } },
         onHover:(evt,els)=>{ evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
-        onClick:(evt,els)=>{ if(els.length){ const rm=DATA.rms[els[0].index]; drillShare(rm, metric, vals[els[0].index], valsTotal); } } } });
+        onClick:(evt,els)=>{ if(els.length){ const rm=rmsForShare[els[0].index]; drillShare(rm, metric, vals[els[0].index], valsTotal); } } } });
   }
   function fMiniLine(canvasId, metric){
     destroyChart(canvasId);
@@ -1994,7 +2010,9 @@ function initDashboard(){
   }
   let fSortKey='spf', fSortDir=-1;
   function renderFullLeaderboard(){
-    const rows = DATA.rms.map(rm=>{
+    // Region-filter fix: was hardcoded to DATA.rms, ignoring the Region filter.
+    const rmsForBoard = fState.rm==="Grand Total" ? DATA.rms : [fState.rm];
+    const rows = rmsForBoard.map(rm=>{
       const prc = lastValid((DATA.metrics["PRC Non*adherance"]||{})[rm]||[]).v;
       const untrace = ytdSum("Untraceable (DH+ODH+MDH) * Count >1 Day", rm);
       const spf = ytdSum("LM SPF loss * Overall", rm);
@@ -2011,9 +2029,9 @@ function initDashboard(){
       const sparkId = 'f_lb-'+r.rm.replace(/\s+/g,'');
       return `<tr data-rm="${r.rm}"><td class="name" style="color:${RM_COLORS[r.rm]}">${r.rm}</td>
         <td><span class="badge ${prcBadge}">${r.prc!==null?r.prc.toFixed(2)+'%':'—'}</span></td>
-        <td>${r.untrace.toLocaleString()}</td>
+        <td>${r.untrace.toLocaleString('en-IN')}</td>
         <td><span class="bar-cell"><span class="bar-fill" style="width:${(r.spf/maxSpf*100).toFixed(0)}%;background:${RM_COLORS[r.rm]}"></span></span><span style="margin-left:6px;">${fmtMoney(r.spf)}</span></td>
-        <td>${fmtMoney(r.fraud)}</td><td>${r.pendency.toLocaleString()}</td>
+        <td>${fmtMoney(r.fraud)}</td><td>${r.pendency.toLocaleString('en-IN')}</td>
         <td><div class="spark-td"><canvas id="${sparkId}"></canvas></div></td></tr>`;
     }).join('');
     rows.forEach(r=>{
@@ -2043,6 +2061,7 @@ function initDashboard(){
   window.renderWeekTab = renderWeekTab;
   window.renderMonthTab = renderMonthTab;
   window.renderHubTab = renderHubTab;
+  window.renderHubLookupTab = renderHubLookupTab;
   window.renderSheetTab = renderSheetTab;
   window.renderFullTab = renderFullTab;
 
