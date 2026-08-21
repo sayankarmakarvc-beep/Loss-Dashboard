@@ -473,6 +473,10 @@ body.modal-lock{overflow:hidden;}
       </div>
     </div>
     <div class="hdr-right">
+      <button class="refresh-btn" id="resetAllBtn" style="background:linear-gradient(135deg, var(--ink-dim), var(--ink));box-shadow:0 4px 16px rgba(28,28,30,.2);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"></path><path d="M19 6l-1 14a1 1 0 01-1 1H7a1 1 0 01-1-1L5 6"></path></svg>
+        Reset
+      </button>
       <button class="refresh-btn" id="refreshBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"></path></svg>
         Refresh
@@ -546,7 +550,9 @@ body.modal-lock{overflow:hidden;}
   <div class="card glass tilt gfbar" id="gfBar">
     <div class="gfbar-group">
       <span class="gfbar-label">RM</span>
-      <div class="gfbar-pills" id="gf_rmPills"></div>
+      <input type="text" id="gf_rmInput" list="gf_rmList" placeholder="type + Enter…">
+      <datalist id="gf_rmList"></datalist>
+      <div class="gfbar-chips" id="gf_rmChips"></div>
     </div>
     <div class="gfbar-group">
       <span class="gfbar-label">AM</span>
@@ -615,7 +621,7 @@ body.modal-lock{overflow:hidden;}
   <div class="tabpanel" id="panel-week" role="tabpanel" aria-labelledby="tabbtn-week">
     <div class="filterbar glass">
       <div><label>AM</label><input type="text" id="w_amInput" list="w_amList" placeholder="type + Enter…"><datalist id="w_amList"></datalist><div class="gfbar-chips" id="w_amChips"></div></div>
-      <div><label>RM</label><div class="gfbar-pills" id="w_rmPills"></div></div>
+      <div><label>RM</label><input type="text" id="w_rmInput" list="w_rmList" placeholder="type + Enter…"><datalist id="w_rmList"></datalist><div class="gfbar-chips" id="w_rmChips"></div></div>
       <div><label>Week</label><select id="w_weekFilter"></select></div>
       <div><label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="w_amBreakdown" style="cursor:pointer;">AM breakdown</label></div>
     </div>
@@ -650,7 +656,7 @@ body.modal-lock{overflow:hidden;}
   <div class="tabpanel" id="panel-month" role="tabpanel" aria-labelledby="tabbtn-month">
     <div class="filterbar glass">
       <div><label>AM</label><input type="text" id="m_amInput" list="m_amList" placeholder="type + Enter…"><datalist id="m_amList"></datalist><div class="gfbar-chips" id="m_amChips"></div></div>
-      <div><label>RM</label><div class="gfbar-pills" id="m_rmPills"></div></div>
+      <div><label>RM</label><input type="text" id="m_rmInput" list="m_rmList" placeholder="type + Enter…"><datalist id="m_rmList"></datalist><div class="gfbar-chips" id="m_rmChips"></div></div>
       <div><label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="m_amBreakdown" style="cursor:pointer;">AM breakdown</label></div>
     </div>
     <div class="card glass tilt" style="padding:12px 16px;">
@@ -693,7 +699,7 @@ body.modal-lock{overflow:hidden;}
         <option value="rm">RM</option>
         <option value="partner">Partner</option>
       </select></div>
-      <div><label>RM</label><div class="gfbar-pills" id="h_rmPills"></div></div>
+      <div><label>RM</label><input type="text" id="h_rmInput" list="h_rmList" placeholder="type + Enter…"><datalist id="h_rmList"></datalist><div class="gfbar-chips" id="h_rmChips"></div></div>
       <div><label>Hub type</label><div class="gfbar-pills" id="h_typePills"></div></div>
       <div><label>AM</label><input type="text" id="h_amInput" list="h_amList" placeholder="type + Enter…"><datalist id="h_amList"></datalist><div class="gfbar-chips" id="h_amChips"></div></div>
       <div><label>Partner</label><input type="text" id="h_partnerInput" list="h_partnerList" placeholder="type + Enter…"><datalist id="h_partnerList"></datalist><div class="gfbar-chips" id="h_partnerChips"></div></div>
@@ -815,7 +821,7 @@ body.modal-lock{overflow:hidden;}
         <div class="pill" data-mode="hub">Hub</div>
       </div>
       <div><label>AM</label><input type="text" id="s_amInput" list="s_amList" placeholder="type + Enter…"><datalist id="s_amList"></datalist><div class="gfbar-chips" id="s_amChips"></div></div>
-      <div><label>RM</label><div class="gfbar-pills" id="s_rmPills"></div></div>
+      <div><label>RM</label><input type="text" id="s_rmInput" list="s_rmList" placeholder="type + Enter…"><datalist id="s_rmList"></datalist><div class="gfbar-chips" id="s_rmChips"></div></div>
       <div id="s_hubSearchWrap" style="display:none;"><label>Search hub</label><input type="text" id="s_hubSearch" placeholder="e.g. AbhanpurMDH"></div>
       <div><label>Weeks shown</label><select id="s_weekWindow">
         <option value="6">Last 6 weeks</option>
@@ -847,7 +853,7 @@ body.modal-lock{overflow:hidden;}
   <div class="tabpanel" id="panel-full" role="tabpanel" aria-labelledby="tabbtn-full">
     <div class="filterbar glass">
       <div><label>AM</label><input type="text" id="f_amInput" list="f_amList" placeholder="type + Enter…"><datalist id="f_amList"></datalist><div class="gfbar-chips" id="f_amChips"></div></div>
-      <div><label>RM</label><div class="gfbar-pills" id="f_rmPills"></div></div>
+      <div><label>RM</label><input type="text" id="f_rmInput" list="f_rmList" placeholder="type + Enter…"><datalist id="f_rmList"></datalist><div class="gfbar-chips" id="f_rmChips"></div></div>
       <div><label>Partner</label><input type="text" id="f_partnerInput" list="f_partnerList" placeholder="type + Enter…"><datalist id="f_partnerList"></datalist><div class="gfbar-chips" id="f_partnerChips"></div></div>
       <div><label>From week</label><select id="f_weekFromFilter"></select></div>
       <div><label>To week</label><select id="f_weekToFilter"></select></div>
@@ -1547,17 +1553,7 @@ function initDashboard(){
   const ALL_PARTNERS = [...new Set(HUB.rows.map(h=>h[4]).filter(Boolean))].sort();
   const ALL_HUB_TYPES = [...new Set(HUB.rows.map(h=>h[3]).filter(Boolean))].sort();
 
-  const gfRmPills = document.getElementById('gf_rmPills');
-  DATA.rms.forEach(rm=>{
-    const p = document.createElement('div'); p.className='pill'; p.textContent = rm;
-    p.addEventListener('click', ()=>{
-      if(gFilter.rm.has(rm)){ gFilter.rm.delete(rm); p.classList.remove('active'); }
-      else { gFilter.rm.add(rm); p.classList.add('active'); }
-      onGlobalFilterChange();
-    });
-    gfRmPills.appendChild(p);
-  });
-
+  document.getElementById('gf_rmList').innerHTML = DATA.rms.map(r=>`<option value="${escapeHtml(r)}">`).join('');
   document.getElementById('gf_amList').innerHTML = ALL_AMS.map(a=>`<option value="${escapeHtml(a)}">`).join('');
   document.getElementById('gf_hubList').innerHTML = ALL_HUB_NAMES.map(h=>`<option value="${escapeHtml(h)}">`).join('');
 
@@ -1582,6 +1578,9 @@ function initDashboard(){
     inputEl.value = '';
     onGlobalFilterChange();
   }
+  const gfRmInput = document.getElementById('gf_rmInput');
+  gfRmInput.addEventListener('change', ()=> addFromInput(gfRmInput, 'rm', DATA.rms));
+  gfRmInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addFromInput(gfRmInput, 'rm', DATA.rms); } });
   const gfAmInput = document.getElementById('gf_amInput');
   gfAmInput.addEventListener('change', ()=> addFromInput(gfAmInput, 'am', ALL_AMS));
   gfAmInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addFromInput(gfAmInput, 'am', ALL_AMS); } });
@@ -1591,11 +1590,11 @@ function initDashboard(){
 
   document.getElementById('gf_clearBtn').addEventListener('click', ()=>{
     gFilter.rm.clear(); gFilter.am.clear(); gFilter.hub.clear();
-    gfRmPills.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
     onGlobalFilterChange();
   });
 
   function onGlobalFilterChange(){
+    renderGfChips('rm', 'gf_rmChips');
     renderGfChips('am', 'gf_amChips');
     renderGfChips('hub', 'gf_hubChips');
     const n = gFilter.rm.size + gFilter.am.size + gFilter.hub.size;
@@ -1776,7 +1775,7 @@ function initDashboard(){
   let wState = { rm: new Set(), am: new Set(), week: latestWeek, metric: "LM SPF loss * Overall" };
 
   buildChipMultiSelect(document.getElementById('w_amInput'), document.getElementById('w_amList'), document.getElementById('w_amChips'), ALL_AMS, wState.am, ()=>renderWeekTab());
-  buildPillMultiSelect(document.getElementById('w_rmPills'), DATA.rms, wState.rm, ()=>renderWeekTab());
+  buildChipMultiSelect(document.getElementById('w_rmInput'), document.getElementById('w_rmList'), document.getElementById('w_rmChips'), DATA.rms, wState.rm, ()=>renderWeekTab());
 
   const wWeekSel = document.getElementById('w_weekFilter');
   DATA.weeks.forEach(w=>{ const o=document.createElement('option'); o.value=w; o.textContent='Week '+w; wWeekSel.appendChild(o); });
@@ -1885,7 +1884,7 @@ function initDashboard(){
      ====================================================================== */
   let mState = { rm: new Set(), am: new Set(), metric: "LM SPF loss * Overall" };
   buildChipMultiSelect(document.getElementById('m_amInput'), document.getElementById('m_amList'), document.getElementById('m_amChips'), ALL_AMS, mState.am, ()=>renderMonthTab());
-  buildPillMultiSelect(document.getElementById('m_rmPills'), DATA.rms, mState.rm, ()=>renderMonthTab());
+  buildChipMultiSelect(document.getElementById('m_rmInput'), document.getElementById('m_rmList'), document.getElementById('m_rmChips'), DATA.rms, mState.rm, ()=>renderMonthTab());
   document.getElementById('m_amBreakdown').addEventListener('change', renderMonthTab);
   buildCategorizedPills(document.getElementById('m_metricPills'), ALL_METRICS, mState.metric, m=>{ mState.metric=m; renderMonthTab(); });
 
@@ -2028,7 +2027,7 @@ function initDashboard(){
   const GROUP_DIM_LABEL = { am:'AM', hub:'Hub', rm:'RM', partner:'Partner' };
   const GROUP_DIM_PLURAL = { am:'AMs', hub:'hubs', rm:'RMs', partner:'Partners' };
 
-  buildPillMultiSelect(document.getElementById('h_rmPills'), DATA.rms, hState.rm, ()=>renderHubTab());
+  buildChipMultiSelect(document.getElementById('h_rmInput'), document.getElementById('h_rmList'), document.getElementById('h_rmChips'), DATA.rms, hState.rm, ()=>renderHubTab());
   buildPillMultiSelect(document.getElementById('h_typePills'), ALL_HUB_TYPES, hState.type, ()=>renderHubTab());
   buildChipMultiSelect(document.getElementById('h_amInput'), document.getElementById('h_amList'), document.getElementById('h_amChips'), ALL_AMS, hState.am, ()=>renderHubTab());
   buildChipMultiSelect(document.getElementById('h_partnerInput'), document.getElementById('h_partnerList'), document.getElementById('h_partnerChips'), ALL_PARTNERS, hState.partner, ()=>renderHubTab());
@@ -2521,7 +2520,7 @@ function initDashboard(){
   let sState = { rm:new Set(), am:new Set(), metric: "PRC Non*adherance", weekWindow: 12, gridMode:'rm', hubSearch:'' };
 
   buildChipMultiSelect(document.getElementById('s_amInput'), document.getElementById('s_amList'), document.getElementById('s_amChips'), ALL_AMS, sState.am, ()=>renderSheetTab());
-  buildPillMultiSelect(document.getElementById('s_rmPills'), DATA.rms, sState.rm, ()=>renderSheetTab());
+  buildChipMultiSelect(document.getElementById('s_rmInput'), document.getElementById('s_rmList'), document.getElementById('s_rmChips'), DATA.rms, sState.rm, ()=>renderSheetTab());
 
   document.querySelectorAll('#s_gridModeToggle .pill').forEach(p=>{
     p.addEventListener('click', ()=>{
@@ -2682,7 +2681,7 @@ function initDashboard(){
   const fExpanded = new Set();
 
   buildChipMultiSelect(document.getElementById('f_amInput'), document.getElementById('f_amList'), document.getElementById('f_amChips'), ALL_AMS, fState.am, ()=>renderFullTab());
-  buildPillMultiSelect(document.getElementById('f_rmPills'), DATA.rms, fState.rm, ()=>renderFullTab());
+  buildChipMultiSelect(document.getElementById('f_rmInput'), document.getElementById('f_rmList'), document.getElementById('f_rmChips'), DATA.rms, fState.rm, ()=>renderFullTab());
   buildChipMultiSelect(document.getElementById('f_partnerInput'), document.getElementById('f_partnerList'), document.getElementById('f_partnerChips'), ALL_PARTNERS, fState.partner, ()=>renderFullTab());
 
   const fWeekFromSel = document.getElementById('f_weekFromFilter');
@@ -2938,6 +2937,50 @@ function initDashboard(){
   window.renderRmTab = renderRmTab;
   window.renderSheetTab = renderSheetTab;
   window.renderFullTab = renderFullTab;
+
+  // ---------- RESET ALL FILTERS (every tab, back to unfiltered defaults) ----------
+  document.getElementById('resetAllBtn').addEventListener('click', ()=>{
+    gFilter.rm.clear(); gFilter.am.clear(); gFilter.hub.clear();
+    onGlobalFilterChange();
+
+    wState.rm.clear(); wState.am.clear(); wState.week = latestWeek;
+    document.getElementById('w_weekFilter').value = latestWeek;
+    buildChipMultiSelect(document.getElementById('w_rmInput'), document.getElementById('w_rmList'), document.getElementById('w_rmChips'), DATA.rms, wState.rm, ()=>renderWeekTab());
+    buildChipMultiSelect(document.getElementById('w_amInput'), document.getElementById('w_amList'), document.getElementById('w_amChips'), ALL_AMS, wState.am, ()=>renderWeekTab());
+
+    mState.rm.clear(); mState.am.clear();
+    buildChipMultiSelect(document.getElementById('m_rmInput'), document.getElementById('m_rmList'), document.getElementById('m_rmChips'), DATA.rms, mState.rm, ()=>renderMonthTab());
+    buildChipMultiSelect(document.getElementById('m_amInput'), document.getElementById('m_amList'), document.getElementById('m_amChips'), ALL_AMS, mState.am, ()=>renderMonthTab());
+
+    hState.rm.clear(); hState.type.clear(); hState.am.clear(); hState.partner.clear(); hState.search = '';
+    document.getElementById('h_search').value = '';
+    buildChipMultiSelect(document.getElementById('h_rmInput'), document.getElementById('h_rmList'), document.getElementById('h_rmChips'), DATA.rms, hState.rm, ()=>renderHubTab());
+    buildPillMultiSelect(document.getElementById('h_typePills'), ALL_HUB_TYPES, hState.type, ()=>renderHubTab());
+    buildChipMultiSelect(document.getElementById('h_amInput'), document.getElementById('h_amList'), document.getElementById('h_amChips'), ALL_AMS, hState.am, ()=>renderHubTab());
+    buildChipMultiSelect(document.getElementById('h_partnerInput'), document.getElementById('h_partnerList'), document.getElementById('h_partnerChips'), ALL_PARTNERS, hState.partner, ()=>renderHubTab());
+
+    sState.rm.clear(); sState.am.clear(); sState.hubSearch = '';
+    document.getElementById('s_hubSearch').value = '';
+    buildChipMultiSelect(document.getElementById('s_rmInput'), document.getElementById('s_rmList'), document.getElementById('s_rmChips'), DATA.rms, sState.rm, ()=>renderSheetTab());
+    buildChipMultiSelect(document.getElementById('s_amInput'), document.getElementById('s_amList'), document.getElementById('s_amChips'), ALL_AMS, sState.am, ()=>renderSheetTab());
+
+    fState.rm.clear(); fState.am.clear(); fState.partner.clear();
+    fState.weekFrom = DATA.weeks[0]; fState.weekTo = DATA.weeks[DATA.weeks.length-1];
+    document.getElementById('f_weekFromFilter').value = fState.weekFrom;
+    document.getElementById('f_weekToFilter').value = fState.weekTo;
+    buildChipMultiSelect(document.getElementById('f_rmInput'), document.getElementById('f_rmList'), document.getElementById('f_rmChips'), DATA.rms, fState.rm, ()=>renderFullTab());
+    buildChipMultiSelect(document.getElementById('f_amInput'), document.getElementById('f_amList'), document.getElementById('f_amChips'), ALL_AMS, fState.am, ()=>renderFullTab());
+    buildChipMultiSelect(document.getElementById('f_partnerInput'), document.getElementById('f_partnerList'), document.getElementById('f_partnerChips'), ALL_PARTNERS, fState.partner, ()=>renderFullTab());
+
+    document.getElementById('hl_search').value = '';
+    document.getElementById('am_search').value = '';
+    document.getElementById('rm_rmSelect').value = '';
+
+    renderHubLookupTab('');
+    renderAmTab('');
+    renderRmTab('');
+    renderActiveTab();
+  });
 
   // ---------- INITIAL RENDER ----------
   renderCommandCenter();
