@@ -1298,10 +1298,10 @@ function initDashboard(){
     const week = wState.week, metric = wState.metric, meta = METRIC_META[metric];
     const wi = DATA.weeks.indexOf(week);
 
-    // KPI row: all RMs' value for this week, top 6
+    // KPI row: respects the Region filter — one RM if selected, else top 6
     const row = document.getElementById('w_kpiRow');
     row.innerHTML = '';
-    const rmsForKpi = DATA.rms.slice(0,6);
+    const rmsForKpi = wState.rm==="Grand Total" ? DATA.rms.slice(0,6) : [wState.rm];
     rmsForKpi.forEach((rm,i)=>{
       const arr = (DATA.metrics[metric]||{})[rm]||[];
       const val = arr[wi];
@@ -1329,14 +1329,15 @@ function initDashboard(){
     });
 
     document.getElementById('w_barTitle').innerHTML = meta.label+` — Week ${week} <span class="tag">${meta.unit}</span>`;
-    document.getElementById('w_barSub').textContent = `${DATA.rms.length} regions`;
+    const rmsToShow = wState.rm==="Grand Total" ? DATA.rms : [wState.rm];
+    document.getElementById('w_barSub').textContent = wState.rm==="Grand Total" ? `${DATA.rms.length} regions` : wState.rm;
     destroyChart('w_bar');
-    const barVals = DATA.rms.map(rm => ((DATA.metrics[metric]||{})[rm]||[])[wi]);
+    const barVals = rmsToShow.map(rm => ((DATA.metrics[metric]||{})[rm]||[])[wi]);
     charts.w_bar = new Chart(document.getElementById('w_barChart'), {
-      type:'bar', data:{ labels: DATA.rms, datasets:[{ label:meta.label, data: barVals, backgroundColor: DATA.rms.map(r=>RM_COLORS[r]+'cc'), borderColor: DATA.rms.map(r=>RM_COLORS[r]), borderWidth:1.5, borderRadius:6 }]},
+      type:'bar', data:{ labels: rmsToShow, datasets:[{ label:meta.label, data: barVals, backgroundColor: rmsToShow.map(r=>RM_COLORS[r]+'cc'), borderColor: rmsToShow.map(r=>RM_COLORS[r]), borderWidth:1.5, borderRadius:6 }]},
       options:{ ...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:false},
         datalabels:{ display:true, color:'#1c1c1e', font:{family:'JetBrains Mono', size:11, weight:700}, anchor:'end', align:'end', formatter:v=>fmtCompact(v, meta.unit) } }, indexAxis:'y',
-        onClick:(evt,els)=>{ if(els.length) drillRmMetric(DATA.rms[els[0].index], metric); } }
+        onClick:(evt,els)=>{ if(els.length) drillRmMetric(rmsToShow[els[0].index], metric); } }
     });
 
     destroyChart('w_share');
@@ -1957,6 +1958,16 @@ function initDashboard(){
 const DATA_URL = './data.json';
 const AUTO_REFRESH_MS = 5 * 60 * 1000; // re-check data.json every 5 minutes
 
+// initDashboard() does one-time setup: populates every filter <select>,
+// attaches every change/click listener, and defines all render closures.
+// It must run exactly once — running it again on every auto-refresh would
+// re-append duplicate <option>s (several selects are built with raw
+// appendChild, no clear-first) and stack duplicate event listeners on top
+// of the old ones, so a single filter change would re-render N times with
+// stale + fresh state mixed in (visible flicker, and filters that seem to
+// stop working). Subsequent refreshes just re-render whichever tab is open.
+let dashboardBooted = false;
+
 function setDataSourceBadge(mode, detail){
   const el = document.getElementById('dataSourceBadge');
   if(!el) return;
@@ -1982,7 +1993,12 @@ function loadData(){
       setDataSourceBadge('live', 'Refreshed from the sheet at ' + ts);
       const subEl = document.getElementById('hdrSub');
       if(subEl && DATA.rms) subEl.innerHTML = `<b>${DATA.rms.length}</b> Regional Managers · <b>${HUB.rows.length}</b> Hubs · <b>${ALL_METRICS.length}</b> tracked metrics · Week 1–${PAYLOAD.latestWeek||DATA.weeks[DATA.weeks.length-1]}, FY2026`;
-      initDashboard();
+      if(!dashboardBooted){
+        initDashboard();
+        dashboardBooted = true;
+      } else {
+        renderActiveTab();
+      }
       stampUpdated();
       const btn = document.getElementById('refreshBtn');
       btn.classList.remove('spinning'); btn.disabled = false;
