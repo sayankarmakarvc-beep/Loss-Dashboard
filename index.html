@@ -584,9 +584,10 @@ body.modal-lock{overflow:hidden;}
   <!-- ================= WEEK VIEW ================= -->
   <div class="tabpanel" id="panel-week" role="tabpanel" aria-labelledby="tabbtn-week">
     <div class="filterbar glass">
-      <div><label>AM</label><select id="w_amFilter"></select></div>
-      <div><label>Region</label><select id="w_rmFilter"></select></div>
+      <div><label>AM</label><input type="text" id="w_amInput" list="w_amList" placeholder="type + Enter…"><datalist id="w_amList"></datalist><div class="gfbar-chips" id="w_amChips"></div></div>
+      <div><label>RM</label><div class="gfbar-pills" id="w_rmPills"></div></div>
       <div><label>Week</label><select id="w_weekFilter"></select></div>
+      <div><label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="w_amBreakdown" style="cursor:pointer;">AM breakdown</label></div>
     </div>
     <div class="card glass tilt" style="padding:12px 16px;">
       <div class="pillrows" id="w_metricPills"></div>
@@ -605,13 +606,22 @@ body.modal-lock{overflow:hidden;}
         <div class="chart-box grande"><canvas id="w_shareChart"></canvas></div>
       </div>
     </div>
+    <div class="card glass tilt" id="w_amBreakdownCard" style="display:none;">
+      <div class="card-hdr">
+        <div class="card-title" id="w_amBreakdownTitle">AM breakdown</div>
+        <div class="card-sub">Click a bar to drill in</div>
+      </div>
+      <div class="chart-box grande"><canvas id="w_amBreakdownChart"></canvas></div>
+    </div>
+    <div class="hint" id="w_amBreakdownHint" style="display:none;">Pick exactly one RM above to see its AM breakdown.</div>
   </div>
 
   <!-- ================= MONTH VIEW ================= -->
   <div class="tabpanel" id="panel-month" role="tabpanel" aria-labelledby="tabbtn-month">
     <div class="filterbar glass">
-      <div><label>AM</label><select id="m_amFilter"></select></div>
-      <div><label>Region</label><select id="m_rmFilter"></select></div>
+      <div><label>AM</label><input type="text" id="m_amInput" list="m_amList" placeholder="type + Enter…"><datalist id="m_amList"></datalist><div class="gfbar-chips" id="m_amChips"></div></div>
+      <div><label>RM</label><div class="gfbar-pills" id="m_rmPills"></div></div>
+      <div><label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="m_amBreakdown" style="cursor:pointer;">AM breakdown</label></div>
     </div>
     <div class="card glass tilt" style="padding:12px 16px;">
       <div class="pillrows" id="m_metricPills"></div>
@@ -631,9 +641,17 @@ body.modal-lock{overflow:hidden;}
       </div>
     </div>
     <div class="card glass tilt">
-      <div class="card-hdr"><div class="card-title">Monthly breakdown by region <span class="tag" id="m_tableTag"></span></div></div>
+      <div class="card-hdr"><div class="card-title">Monthly breakdown by RM <span class="tag" id="m_tableTag"></span></div></div>
       <div class="tablewrap"><table id="m_table"><thead></thead><tbody></tbody></table></div>
     </div>
+    <div class="card glass tilt" id="m_amBreakdownCard" style="display:none;">
+      <div class="card-hdr">
+        <div class="card-title" id="m_amBreakdownTitle">AM breakdown</div>
+        <div class="card-sub">Click a bar to drill in</div>
+      </div>
+      <div class="chart-box grande"><canvas id="m_amBreakdownChart"></canvas></div>
+    </div>
+    <div class="hint" id="m_amBreakdownHint" style="display:none;">Pick exactly one RM above to see its AM breakdown.</div>
   </div>
 
   <!-- ================= HUB VIEW ================= -->
@@ -645,10 +663,10 @@ body.modal-lock{overflow:hidden;}
         <option value="rm">RM</option>
         <option value="partner">Partner</option>
       </select></div>
-      <div><label>Region (RM)</label><select id="h_rmFilter"></select></div>
-      <div><label>Hub type</label><select id="h_typeFilter"></select></div>
-      <div><label>AM</label><select id="h_amFilter"></select></div>
-      <div><label>Partner</label><select id="h_partnerFilter"></select></div>
+      <div><label>RM</label><div class="gfbar-pills" id="h_rmPills"></div></div>
+      <div><label>Hub type</label><div class="gfbar-pills" id="h_typePills"></div></div>
+      <div><label>AM</label><input type="text" id="h_amInput" list="h_amList" placeholder="type + Enter…"><datalist id="h_amList"></datalist><div class="gfbar-chips" id="h_amChips"></div></div>
+      <div><label>Partner</label><input type="text" id="h_partnerInput" list="h_partnerList" placeholder="type + Enter…"><datalist id="h_partnerList"></datalist><div class="gfbar-chips" id="h_partnerChips"></div></div>
       <div><label>Search hub</label><input type="text" id="h_search" placeholder="e.g. AbhanpurMDH"></div>
     </div>
     <div class="card glass tilt" style="padding:12px 16px;">
@@ -761,8 +779,14 @@ body.modal-lock{overflow:hidden;}
   <!-- ================= SHEET VIEW (raw-grid replica) ================= -->
   <div class="tabpanel" id="panel-sheet" role="tabpanel" aria-labelledby="tabbtn-sheet">
     <div class="filterbar glass">
-      <div><label>AM</label><select id="s_amFilter"></select></div>
-      <div><label>Region</label><select id="s_rmFilter"></select></div>
+      <div class="pillgroup" id="s_gridModeToggle" style="margin-left:0;">
+        <div class="pill active" data-mode="rm">RM</div>
+        <div class="pill" data-mode="am">AM</div>
+        <div class="pill" data-mode="hub">Hub</div>
+      </div>
+      <div><label>AM</label><input type="text" id="s_amInput" list="s_amList" placeholder="type + Enter…"><datalist id="s_amList"></datalist><div class="gfbar-chips" id="s_amChips"></div></div>
+      <div><label>RM</label><div class="gfbar-pills" id="s_rmPills"></div></div>
+      <div id="s_hubSearchWrap" style="display:none;"><label>Search hub</label><input type="text" id="s_hubSearch" placeholder="e.g. AbhanpurMDH"></div>
       <div><label>Weeks shown</label><select id="s_weekWindow">
         <option value="6">Last 6 weeks</option>
         <option value="12">Last 12 weeks</option>
@@ -777,7 +801,7 @@ body.modal-lock{overflow:hidden;}
     <div class="card glass tilt">
       <div class="card-hdr">
         <div class="card-title">Metric <span class="tag" id="s_metricTag">PRC Non*adherance</span></div>
-        <div class="card-sub">Click a metric chip to switch the grid below · sheet-style GM → RM rollup</div>
+        <div class="card-sub" id="s_gridSub">Click a metric chip to switch the grid below · sheet-style GM → RM rollup</div>
       </div>
       <div class="pillrows metric-tabs" id="s_metricTabs"></div>
       <div class="sheetwrap">
@@ -792,8 +816,9 @@ body.modal-lock{overflow:hidden;}
   <!-- ================= FULL VIEW ================= -->
   <div class="tabpanel" id="panel-full" role="tabpanel" aria-labelledby="tabbtn-full">
     <div class="filterbar glass">
-      <div><label>AM</label><select id="f_amFilter"></select></div>
-      <div><label>Region</label><select id="f_rmFilter"></select></div>
+      <div><label>AM</label><input type="text" id="f_amInput" list="f_amList" placeholder="type + Enter…"><datalist id="f_amList"></datalist><div class="gfbar-chips" id="f_amChips"></div></div>
+      <div><label>RM</label><div class="gfbar-pills" id="f_rmPills"></div></div>
+      <div><label>Partner</label><input type="text" id="f_partnerInput" list="f_partnerList" placeholder="type + Enter…"><datalist id="f_partnerList"></datalist><div class="gfbar-chips" id="f_partnerChips"></div></div>
       <div><label>From week</label><select id="f_weekFromFilter"></select></div>
       <div><label>To week</label><select id="f_weekToFilter"></select></div>
     </div>
@@ -833,16 +858,14 @@ body.modal-lock{overflow:hidden;}
     </div>
     <div class="card glass tilt">
       <div class="card-hdr">
-        <div class="card-title">Regional Manager Leaderboard <span class="tag">ranked by YTD loss impact</span></div>
-        <div class="card-sub">Click any column header to sort</div>
+        <div class="card-title">RM → AM → Partner detail <span class="tag" id="f_treeTag">selected metric</span></div>
+        <div class="card-sub">Click a row to expand it and focus the charts above · click a leaf row's name to just focus it</div>
       </div>
-      <div class="tablewrap"><table id="f_leaderTable">
+      <div class="tablewrap"><table id="f_treeTable">
         <thead><tr>
-          <th data-key="name">RM</th><th data-key="prc">PRC Adherence</th><th data-key="untrace">Untraceable (YTD)</th>
-          <th data-key="spf">SPF Loss (₹L)</th><th data-key="fraud">Fraud Loss (₹L)</th>
-          <th data-key="pendency">Pendency Count</th><th data-key="trend">Trend (selected range)</th>
+          <th data-key="name">Name</th><th data-key="value">Value</th><th data-key="count">Count</th><th data-key="trend">Trend</th>
         </tr></thead>
-        <tbody id="f_leaderBody"></tbody>
+        <tbody id="f_treeBody"></tbody>
       </table></div>
     </div>
   </div>
@@ -1152,6 +1175,50 @@ function debounce(fn, ms){
   return function(...args){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), ms); };
 }
 
+// ---------- REUSABLE MULTI-SELECT FILTER WIDGETS ----------
+// Same pill-toggle visual the global filter bar (gfbar) already uses for RM,
+// generalized for short lists (RM, Hub Type, ...) on any tab. `selected` is a
+// Set the caller owns; empty Set == "all" everywhere these are used.
+function buildPillMultiSelect(container, allValues, selected, onChange){
+  container.innerHTML = '';
+  allValues.forEach(val=>{
+    const p = document.createElement('div');
+    p.className = 'pill' + (selected.has(val) ? ' active' : '');
+    p.textContent = val;
+    p.addEventListener('click', ()=>{
+      if(selected.has(val)) selected.delete(val); else selected.add(val);
+      p.classList.toggle('active');
+      onChange();
+    });
+    container.appendChild(p);
+  });
+}
+// Same chip+datalist-input pattern the global filter bar uses for AM/Hub,
+// generalized for long lists. `inputEl`/`listEl`/`chipsEl` are the text
+// input, its <datalist>, and the chips container respectively.
+function buildChipMultiSelect(inputEl, listEl, chipsEl, allValues, selected, onChange){
+  listEl.innerHTML = allValues.map(v=>`<option value="${escapeHtml(v)}">`).join('');
+  function renderChips(){
+    chipsEl.innerHTML = '';
+    [...selected].forEach(val=>{
+      const chip = document.createElement('span'); chip.className='gfchip';
+      chip.textContent = val;
+      const rmBtn = document.createElement('button'); rmBtn.type='button'; rmBtn.textContent='×';
+      rmBtn.addEventListener('click', ()=>{ selected.delete(val); renderChips(); onChange(); });
+      chip.appendChild(rmBtn);
+      chipsEl.appendChild(chip);
+    });
+  }
+  function addFromInput(){
+    const val = inputEl.value.trim();
+    if(!val || !allValues.includes(val) || selected.has(val)) return;
+    selected.add(val); inputEl.value=''; renderChips(); onChange();
+  }
+  inputEl.addEventListener('change', addFromInput);
+  inputEl.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addFromInput(); } });
+  renderChips();
+}
+
 // Build category-grouped pill rows into `wrap` (a .pillrows container) for
 // any list of metric keys. Keeps the same click/active semantics the flat
 // pill list used to have, just organized so 26 metrics don't look like an
@@ -1249,6 +1316,37 @@ function drillRmMetric(rm, metric){
   charts.dm_chart = new Chart(document.getElementById('dm_chart'), {
     type:'line',
     data:{ labels: DATA.weeks.map(w=>'W'+w), datasets:[{ data:arr, borderColor: RM_COLORS[rm]||meta.color, backgroundColor:(RM_COLORS[rm]||meta.color)+'22', borderWidth:2.6, tension:.3, spanGaps:true, pointRadius:2, pointHoverRadius:6, fill:true }] },
+    options:{ ...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:false}} }
+  });
+  openDrilldownUI();
+}
+
+// AM equivalent of drillRmMetric — same shape, reads amSeries/amYtdSum/amYtdAvg.
+function drillAmMetric(am, metric){
+  const meta = METRIC_META[metric];
+  const arr = amSeries(metric, am);
+  const {v:last} = lastValid(arr);
+  const ytd = meta.unit==='%' ? amYtdAvg(metric, am) : amYtdSum(metric, am);
+  const valid = arr.filter(v=>typeof v==='number');
+  const best = valid.length ? (meta.invert ? Math.max(...valid) : Math.min(...valid)) : null;
+  const worst = valid.length ? (meta.invert ? Math.min(...valid) : Math.max(...valid)) : null;
+  const rm = AM && AM.amToRm ? AM.amToRm[am] : null;
+
+  dm.eyebrow.textContent = 'AM' + (rm ? ' · ' + rm : '');
+  dm.title.textContent = meta.label;
+  dm.sub.textContent = `${am} · Weeks ${(AM?AM.weeks:DATA.weeks)[0]}–${(AM?AM.weeks:DATA.weeks)[(AM?AM.weeks:DATA.weeks).length-1]} · FY2026`;
+  dm.stats.innerHTML = [
+    statTile('Latest value', fmtVal(last, meta.unit)),
+    statTile(meta.unit==='%' ? 'YTD average' : 'YTD total', fmtVal(ytd, meta.unit)),
+    statTile('Best week', fmtVal(best, meta.unit)),
+    statTile('Worst week', fmtVal(worst, meta.unit)),
+  ].join('');
+  dm.extra.innerHTML = '';
+
+  destroyChart('dm_chart');
+  charts.dm_chart = new Chart(document.getElementById('dm_chart'), {
+    type:'line',
+    data:{ labels: (AM?AM.weeks:DATA.weeks).map(w=>'W'+w), datasets:[{ data:arr, borderColor: meta.color, backgroundColor: meta.color+'22', borderWidth:2.6, tension:.3, spanGaps:true, pointRadius:2, pointHoverRadius:6, fill:true }] },
     options:{ ...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:false}} }
   });
   openDrilldownUI();
@@ -1417,6 +1515,7 @@ function initDashboard(){
      and stay independent of it.
      ==================================================================== */
   const ALL_HUB_NAMES = [...new Set(HUB.rows.map(h=>h[1]))].sort();
+  const ALL_PARTNERS = [...new Set(HUB.rows.map(h=>h[4]).filter(Boolean))].sort();
 
   const gfRmPills = document.getElementById('gf_rmPills');
   DATA.rms.forEach(rm=>{
@@ -1645,24 +1744,17 @@ function initDashboard(){
     renderCommandCenterMovers();
   }
 
-  let wState = { rm: "Grand Total", am: 'all', week: latestWeek, metric: "LM SPF loss * Overall" };
+  let wState = { rm: new Set(), am: new Set(), week: latestWeek, metric: "LM SPF loss * Overall" };
 
-  const wAmSel = document.getElementById('w_amFilter');
-  wAmSel.innerHTML = '<option value="all">All AMs</option>' + ALL_AMS.map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
-  wAmSel.addEventListener('change', e=>{
-    wState.am = e.target.value;
-    wState.rm = narrowRmSelect(wRmSel, wState.am, 'Grand Total', 'All Regions', wState.rm);
-    renderWeekTab();
-  });
-
-  const wRmSel = document.getElementById('w_rmFilter');
-  narrowRmSelect(wRmSel, wState.am, 'Grand Total', 'All Regions', wState.rm);
-  wRmSel.addEventListener('change', e=>{ wState.rm=e.target.value; renderWeekTab(); });
+  buildChipMultiSelect(document.getElementById('w_amInput'), document.getElementById('w_amList'), document.getElementById('w_amChips'), ALL_AMS, wState.am, ()=>renderWeekTab());
+  buildPillMultiSelect(document.getElementById('w_rmPills'), DATA.rms, wState.rm, ()=>renderWeekTab());
 
   const wWeekSel = document.getElementById('w_weekFilter');
   DATA.weeks.forEach(w=>{ const o=document.createElement('option'); o.value=w; o.textContent='Week '+w; wWeekSel.appendChild(o); });
   wWeekSel.value = wState.week;
   wWeekSel.addEventListener('change', e=>{ wState.week=parseInt(e.target.value); renderWeekTab(); });
+
+  document.getElementById('w_amBreakdown').addEventListener('change', renderWeekTab);
 
   buildCategorizedPills(document.getElementById('w_metricPills'), ALL_METRICS, wState.metric, m=>{ wState.metric=m; renderWeekTab(); });
 
@@ -1670,11 +1762,11 @@ function initDashboard(){
     const week = wState.week, metric = wState.metric, meta = METRIC_META[metric];
     const wi = DATA.weeks.indexOf(week);
 
-    // KPI row: respects the Region filter — one RM if selected, else top 6
+    // KPI row: respects the RM filter — selected RMs if any, else top 6
     const row = document.getElementById('w_kpiRow');
     row.innerHTML = '';
     const frag = document.createDocumentFragment();
-    const rmsForKpi = wState.rm==="Grand Total" ? gInScopeRms().slice(0,6) : [wState.rm];
+    const rmsForKpi = wState.rm.size ? [...wState.rm].filter(r=>gInScopeRms().includes(r)) : gInScopeRms().slice(0,6);
     rmsForKpi.forEach((rm,i)=>{
       const arr = rmSeries(metric, rm);
       const val = arr[wi];
@@ -1706,8 +1798,8 @@ function initDashboard(){
     });
 
     document.getElementById('w_barTitle').innerHTML = meta.label+` — Week ${week} <span class="tag">${meta.unit}</span>`;
-    const rmsToShow = wState.rm==="Grand Total" ? gInScopeRms() : [wState.rm];
-    document.getElementById('w_barSub').textContent = wState.rm==="Grand Total" ? `${rmsToShow.length} regions` : wState.rm;
+    const rmsToShow = wState.rm.size ? [...wState.rm].filter(r=>gInScopeRms().includes(r)) : gInScopeRms();
+    document.getElementById('w_barSub').textContent = wState.rm.size ? rmsToShow.join(', ') : `${rmsToShow.length} RMs`;
     destroyChart('w_bar');
     const barVals = rmsToShow.map(rm => rmSeries(metric, rm)[wi]);
     charts.w_bar = new Chart(document.getElementById('w_barChart'), {
@@ -1728,29 +1820,52 @@ function initDashboard(){
         onHover:(evt,els)=>{ evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
         onClick:(evt,els)=>{ if(els.length){ const rm=shareRms[els[0].index]; drillShare(rm, metric, shareVals[els[0].index], shareTotal); } } }
     });
+
+    renderWeekAmBreakdown(metric, meta, week);
+  }
+
+  // AM breakdown card: only meaningful once the RM filter narrows to exactly
+  // one RM (an AM view "under" that RM) — otherwise ~40 AMs at once isn't
+  // readable, so we show a hint instead.
+  function renderWeekAmBreakdown(metric, meta, week){
+    const card = document.getElementById('w_amBreakdownCard');
+    const hint = document.getElementById('w_amBreakdownHint');
+    const enabled = document.getElementById('w_amBreakdown').checked;
+    const selectedRms = [...wState.rm];
+    hint.style.display = enabled && selectedRms.length!==1 ? '' : 'none';
+    if(!enabled || selectedRms.length!==1){ card.style.display='none'; destroyChart('w_amBreakdown'); return; }
+    card.style.display='';
+    const rm = selectedRms[0];
+    let ams = gInScopeAms().filter(a=> (AM&&AM.amToRm?AM.amToRm[a]:null)===rm);
+    if(wState.am.size) ams = ams.filter(a=>wState.am.has(a));
+    const wi2 = (AM&&AM.weeks) ? AM.weeks.indexOf(week) : -1;
+    const order = ams.map(am=>({ am, v: wi2>=0 ? amSeries(metric, am)[wi2] : null }))
+      .sort((a,b)=> meta.invert ? (a.v??0)-(b.v??0) : (b.v??0)-(a.v??0));
+    document.getElementById('w_amBreakdownTitle').innerHTML = `AM breakdown — ${escapeHtml(rm)} <span class="tag">${meta.label} · Week ${week}</span>`;
+    destroyChart('w_amBreakdown');
+    charts.w_amBreakdown = new Chart(document.getElementById('w_amBreakdownChart'), {
+      type:'bar', data:{ labels: order.map(o=>o.am), datasets:[{ label:meta.label, data: order.map(o=>o.v), backgroundColor: meta.color+'cc', borderColor: meta.color, borderWidth:1.5, borderRadius:6 }]},
+      options:{ ...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:false},
+        datalabels:{ display:true, color:'#1c1c1e', font:{family:'JetBrains Mono', size:11, weight:700}, anchor:'end', align:'end', formatter:v=>fmtCompact(v, meta.unit) } }, indexAxis:'y',
+        onClick:(evt,els)=>{ if(els.length) drillAmMetric(order[els[0].index].am, metric); } }
+    });
   }
 
   /* ======================================================================
      MONTH VIEW — aggregate weeks into calendar months
      ====================================================================== */
-  let mState = { rm: "Grand Total", am: 'all', metric: "LM SPF loss * Overall" };
-  const mAmSel = document.getElementById('m_amFilter');
-  mAmSel.innerHTML = '<option value="all">All AMs</option>' + ALL_AMS.map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
-  mAmSel.addEventListener('change', e=>{
-    mState.am = e.target.value;
-    mState.rm = narrowRmSelect(mRmSel, mState.am, 'Grand Total', 'All Regions', mState.rm);
-    renderMonthTab();
-  });
-  const mRmSel = document.getElementById('m_rmFilter');
-  narrowRmSelect(mRmSel, mState.am, 'Grand Total', 'All Regions', mState.rm);
-  mRmSel.addEventListener('change', e=>{ mState.rm=e.target.value; renderMonthTab(); });
+  let mState = { rm: new Set(), am: new Set(), metric: "LM SPF loss * Overall" };
+  buildChipMultiSelect(document.getElementById('m_amInput'), document.getElementById('m_amList'), document.getElementById('m_amChips'), ALL_AMS, mState.am, ()=>renderMonthTab());
+  buildPillMultiSelect(document.getElementById('m_rmPills'), DATA.rms, mState.rm, ()=>renderMonthTab());
+  document.getElementById('m_amBreakdown').addEventListener('change', renderMonthTab);
   buildCategorizedPills(document.getElementById('m_metricPills'), ALL_METRICS, mState.metric, m=>{ mState.metric=m; renderMonthTab(); });
 
-  function monthlySeries(metric, rm){
-    const arr = rmSeries(metric, rm);
+  // Aggregates any weekly (weeks[], values-by-index) series into calendar
+  // months. Generalized from just rmSeries so amSeries can reuse it too.
+  function monthlySeriesFromArr(weeksArr, arr, metric){
     const meta = METRIC_META[metric];
     const byMonth = {};
-    DATA.weeks.forEach((w,i)=>{
+    weeksArr.forEach((w,i)=>{
       const mo = WEEK_MONTH[w];
       const v = arr[i];
       if(v===null || v===undefined) return;
@@ -1765,13 +1880,16 @@ function initDashboard(){
     });
     return { months, values };
   }
+  function monthlySeries(metric, rm){ return monthlySeriesFromArr(DATA.weeks, rmSeries(metric, rm), metric); }
+  function amMonthlySeries(metric, am){ return monthlySeriesFromArr((AM?AM.weeks:DATA.weeks), amSeries(metric, am), metric); }
 
   function renderMonthTab(){
     const metric = mState.metric, meta = METRIC_META[metric];
     document.getElementById('m_lineTitle').innerHTML = meta.label + ` <span class="tag">${meta.unit==='%'?'monthly avg':'monthly total'}</span>`;
 
     destroyChart('m_line');
-    const rmsToShow = mState.rm==="Grand Total" ? gInScopeRms() : [mState.rm];
+    const rmFiltered = mState.rm.size > 0;
+    const rmsToShow = rmFiltered ? [...mState.rm].filter(r=>gInScopeRms().includes(r)) : gInScopeRms();
     const allMonths = new Set();
     const seriesByRm = {};
     rmsToShow.forEach(rm=>{ const s = monthlySeries(metric, rm); seriesByRm[rm]=s; s.months.forEach(m=>allMonths.add(m)); });
@@ -1782,9 +1900,9 @@ function initDashboard(){
     const datasets = rmsToShow.map(rm=>{
       const s = seriesByRm[rm];
       const data = monthsSorted.map(mo=>{ const idx = s.months.indexOf(mo); return idx>=0? s.values[idx] : null; });
-      return { label:rm, data, borderColor:RM_COLORS[rm], backgroundColor:RM_COLORS[rm]+'22', borderWidth: mState.rm==="Grand Total"?1.8:2.8, tension:.35, spanGaps:true, pointRadius:4, pointHoverRadius:7, fill: mState.rm!=="Grand Total" };
+      return { label:rm, data, borderColor:RM_COLORS[rm], backgroundColor:RM_COLORS[rm]+'22', borderWidth: rmFiltered?2.8:1.8, tension:.35, spanGaps:true, pointRadius:4, pointHoverRadius:7, fill: rmFiltered };
     });
-    if(mState.rm==="Grand Total"){
+    if(!rmFiltered){
       const s = monthlySeries(metric, "Grand Total");
       const data = monthsSorted.map(mo=>{ const idx=s.months.indexOf(mo); return idx>=0?s.values[idx]:null; });
       datasets.push({label:"Grand Total", data, borderColor:"#1c1c1e", borderWidth:3.5, tension:.35, spanGaps:true, pointRadius:5, borderDash:[6,3], fill:false});
@@ -1829,8 +1947,8 @@ function initDashboard(){
       }).join('');
       return `<tr data-rm="${rm}"><td class="name" style="color:${RM_COLORS[rm]}">${rm}</td>${cells}</tr>`;
     });
-    // Grand total row (only meaningful when showing every region)
-    if(mState.rm==="Grand Total"){
+    // Grand total row (only meaningful when showing every RM)
+    if(!rmFiltered){
       const gs = monthlySeries(metric, "Grand Total");
       const gtCells = monthsSorted.map(mo=>{ const idx=gs.months.indexOf(mo); const v=idx>=0?gs.values[idx]:null; return `<td>${fmtVal(v, meta.unit)}</td>`; }).join('');
       bodyRows.push(`<tr data-rm="Grand Total"><td class="name" style="color:#1c1c1e">Grand Total</td>${gtCells}</tr>`);
@@ -1838,6 +1956,35 @@ function initDashboard(){
     table.querySelector('tbody').innerHTML = bodyRows.join('');
     table.querySelectorAll('tbody tr').forEach(tr=>{
       tr.addEventListener('click', ()=> drillRmMetric(tr.dataset.rm, metric));
+    });
+
+    renderMonthAmBreakdown(metric, meta);
+  }
+
+  // Same "exactly one RM" gate as Week View's AM breakdown, using amMonthlySeries.
+  function renderMonthAmBreakdown(metric, meta){
+    const card = document.getElementById('m_amBreakdownCard');
+    const hint = document.getElementById('m_amBreakdownHint');
+    const enabled = document.getElementById('m_amBreakdown').checked;
+    const selectedRms = [...mState.rm];
+    hint.style.display = enabled && selectedRms.length!==1 ? '' : 'none';
+    if(!enabled || selectedRms.length!==1){ destroyChart('m_amBreakdown'); document.getElementById('m_amBreakdownCard').style.display='none'; return; }
+    card.style.display='';
+    const rm = selectedRms[0];
+    let ams = gInScopeAms().filter(a=> (AM&&AM.amToRm?AM.amToRm[a]:null)===rm);
+    if(mState.am.size) ams = ams.filter(a=>mState.am.has(a));
+    const order = ams.map(am=>{
+      const s = amMonthlySeries(metric, am);
+      const latest = s.values.length ? s.values[s.values.length-1] : null;
+      return { am, v: latest };
+    }).sort((a,b)=> meta.invert ? (a.v??0)-(b.v??0) : (b.v??0)-(a.v??0));
+    document.getElementById('m_amBreakdownTitle').innerHTML = `AM breakdown — ${escapeHtml(rm)} <span class="tag">${meta.label} · latest month</span>`;
+    destroyChart('m_amBreakdown');
+    charts.m_amBreakdown = new Chart(document.getElementById('m_amBreakdownChart'), {
+      type:'bar', data:{ labels: order.map(o=>o.am), datasets:[{ label:meta.label, data: order.map(o=>o.v), backgroundColor: meta.color+'cc', borderColor: meta.color, borderWidth:1.5, borderRadius:6 }]},
+      options:{ ...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:false},
+        datalabels:{ display:true, color:'#1c1c1e', font:{family:'JetBrains Mono', size:11, weight:700}, anchor:'end', align:'end', formatter:v=>fmtCompact(v, meta.unit) } }, indexAxis:'y',
+        onClick:(evt,els)=>{ if(els.length) drillAmMetric(order[els[0].index].am, metric); } }
     });
   }
 
@@ -2478,19 +2625,19 @@ function initDashboard(){
   }
 
   /* ======================================================================
-     FULL VIEW — RM-level, all weeks (previous full dashboard)
+     FULL VIEW — every level of detail: RM totals expand into their AMs,
+     which expand into their Partners (AM/RM/Partner filters narrow which
+     branches the tree shows). The KPI/trend/share/mini-metric charts above
+     the tree always describe whatever node is currently "focused" (fFocus):
+     Grand Total by default, or whichever tree row was last clicked.
      ====================================================================== */
-  let fState = { rm: "Grand Total", am: 'all', weekFrom: DATA.weeks[0], weekTo: DATA.weeks[DATA.weeks.length-1], metric: "LM SPF loss * Overall" };
-  const fAmSel = document.getElementById('f_amFilter');
-  fAmSel.innerHTML = '<option value="all">All AMs</option>' + ALL_AMS.map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
-  fAmSel.addEventListener('change', e=>{
-    fState.am = e.target.value;
-    fState.rm = narrowRmSelect(fRmSel, fState.am, 'Grand Total', 'All Regions (Grand Total)', fState.rm);
-    renderFullTab();
-  });
-  const fRmSel = document.getElementById('f_rmFilter');
-  narrowRmSelect(fRmSel, fState.am, 'Grand Total', 'All Regions (Grand Total)', fState.rm);
-  fRmSel.addEventListener('change', e=>{ fState.rm=e.target.value; renderFullTab(); });
+  let fState = { am: new Set(), rm: new Set(), partner: new Set(), weekFrom: DATA.weeks[0], weekTo: DATA.weeks[DATA.weeks.length-1], metric: "LM SPF loss * Overall" };
+  let fFocus = { level:'rm', rm:'Grand Total' };
+  const fExpanded = new Set();
+
+  buildChipMultiSelect(document.getElementById('f_amInput'), document.getElementById('f_amList'), document.getElementById('f_amChips'), ALL_AMS, fState.am, ()=>renderFullTab());
+  buildPillMultiSelect(document.getElementById('f_rmPills'), DATA.rms, fState.rm, ()=>renderFullTab());
+  buildChipMultiSelect(document.getElementById('f_partnerInput'), document.getElementById('f_partnerList'), document.getElementById('f_partnerChips'), ALL_PARTNERS, fState.partner, ()=>renderFullTab());
 
   const fWeekFromSel = document.getElementById('f_weekFromFilter');
   const fWeekToSel = document.getElementById('f_weekToFilter');
@@ -2519,32 +2666,92 @@ function initDashboard(){
     const idxs = DATA.weeks.reduce((acc,w,i)=>{ if(w>=fState.weekFrom && w<=fState.weekTo) acc.push(i); return acc; }, []);
     return idxs.map(i=>arr[i]);
   }
+  // A partner's weekly series, aggregated from its hub rows (sum for count/₹L,
+  // average for % metrics) and aligned onto DATA.weeks so it drops into the
+  // same charts as rmSeries()/amSeries() output.
+  function partnerSeries(metric, am, partner){
+    const idx = hubColIdx(metric);
+    const isPct = METRIC_META[metric].unit==='%';
+    const sums = new Array(DATA.weeks.length).fill(0);
+    const counts = new Array(DATA.weeks.length).fill(0);
+    if(idx>=0){
+      HUB.rows.filter(h=>h[0]===am && (h[4]||'Unspecified')===partner).forEach(h=>{
+        const sparse = h[idx]||[];
+        for(let i=0;i<sparse.length;i+=2){
+          const wi = DATA.weeks.indexOf(sparse[i]);
+          if(wi<0) continue;
+          sums[wi]+=sparse[i+1]; counts[wi]++;
+        }
+      });
+    }
+    return sums.map((s,i)=> counts[i] ? (isPct ? s/counts[i] : s) : null);
+  }
+  function fRmValue(rm){ const meta=METRIC_META[fState.metric]; return meta.unit==='%' ? ytdAvg(fState.metric,rm) : ytdSum(fState.metric,rm); }
+  function fAmValue(am){ const meta=METRIC_META[fState.metric]; return meta.unit==='%' ? amYtdAvg(fState.metric,am) : amYtdSum(fState.metric,am); }
+  function fPartnerValue(am, partner){
+    const meta = METRIC_META[fState.metric];
+    const arr = partnerSeries(fState.metric, am, partner).filter(v=>typeof v==='number');
+    if(!arr.length) return null;
+    return meta.unit==='%' ? arr.reduce((a,b)=>a+b,0)/arr.length : arr.reduce((a,b)=>a+b,0);
+  }
+  // Worst-first ordering for the tree: invert metrics (adherence %) are
+  // worst-when-lowest, everything else is worst-when-highest.
+  function fSortByValue(items, valueOf){
+    const meta = METRIC_META[fState.metric];
+    return items.slice().sort((a,b)=>{
+      const av=valueOf(a), bv=valueOf(b);
+      if(av==null && bv==null) return 0;
+      if(av==null) return 1; if(bv==null) return -1;
+      return meta.invert ? av-bv : bv-av;
+    });
+  }
+  function focusIsAll(){ return fFocus.level==='rm' && fFocus.rm==='Grand Total'; }
+  function focusSeries(metric){
+    if(fFocus.level==='am') return amSeries(metric, fFocus.am);
+    if(fFocus.level==='partner') return partnerSeries(metric, fFocus.am, fFocus.partner);
+    return rmSeries(metric, fFocus.rm);
+  }
+  function focusLabel(){
+    if(fFocus.level==='am') return fFocus.am;
+    if(fFocus.level==='partner') return `${fFocus.partner} (${fFocus.am})`;
+    return fFocus.rm;
+  }
+  function focusColor(metric){ return fFocus.level==='rm' ? (RM_COLORS[fFocus.rm]||METRIC_META[metric].color) : METRIC_META[metric].color; }
+  function rmsInFocusScope(){
+    const inScope = gInScopeRms();
+    return fState.rm.size ? [...fState.rm].filter(r=>inScope.includes(r)) : inScope;
+  }
 
   function renderFullKPIs(){
     const row = document.getElementById('f_kpiRow'); row.innerHTML='';
     const frag = document.createDocumentFragment();
     const metric = fState.metric, meta = METRIC_META[metric];
-    const rmsForKpi = fState.rm==="Grand Total" ? gInScopeRms().slice(0,6) : [fState.rm];
-    rmsForKpi.forEach((rm,i)=>{
-      const arr = fTrim(rmSeries(metric, rm));
+    const all = focusIsAll();
+    const namesForKpi = all ? rmsInFocusScope().slice(0,6) : [focusLabel()];
+    const seriesFor = (name)=> all ? rmSeries(metric, name) : focusSeries(metric);
+    const colorFor = (name)=> all ? RM_COLORS[name] : focusColor(metric);
+    namesForKpi.forEach((name,i)=>{
+      const arr = fTrim(seriesFor(name));
       const {v:last} = lastValid(arr);
       const ytd = meta.unit==='%' ? (arr.filter(v=>typeof v==='number').reduce((a,b)=>a+b,0) / (arr.filter(v=>typeof v==='number').length||1)) : arr.reduce((a,b)=>a+(typeof b==='number'?b:0),0);
+      const color = colorFor(name);
       const kpi = document.createElement('div'); kpi.className='kpi glass tilt clickable sev-neu';
-      kpi.innerHTML = `<div class="kpi-label">${rm}</div><div class="kpi-value" style="color:${RM_COLORS[rm]}"></div>
+      kpi.innerHTML = `<div class="kpi-label">${escapeHtml(name)}</div><div class="kpi-value" style="color:${color}"></div>
         <div class="kpi-delta flat">${meta.unit==='%'?'range avg':'range total'}: ${fmtVal(ytd, meta.unit)}</div>
         <div class="kpi-spark-wrap"><canvas id="f_kpispark-${i}"></canvas></div>`;
-      kpi.addEventListener('click', ()=> drillRmMetric(rm, metric));
+      if(all) kpi.addEventListener('click', ()=> setFocus({level:'rm', rm:name}));
       frag.appendChild(kpi);
-      const cacheKey = 'f_kpi_'+rm;
+      const cacheKey = 'f_kpi_'+name;
       animateNumber(kpi.querySelector('.kpi-value'), kpiValCache[cacheKey], last, v=>fmtVal(v, meta.unit));
       kpiValCache[cacheKey] = last;
     });
     row.appendChild(frag);
-    rmsForKpi.forEach((rm,i)=>{
+    namesForKpi.forEach((name,i)=>{
       const id = 'f_kpispark-'+i; destroyChart(id);
       const el = document.getElementById(id); if(!el) return;
-      const arr = fTrim(rmSeries(metric, rm)).map(v=>v===null?NaN:v);
-      charts[id] = new Chart(el, {type:'line', data:{labels:arr.map((_,j)=>j), datasets:[{data:arr, borderColor:RM_COLORS[rm], borderWidth:1.8, pointRadius:0, tension:.35, fill:true, backgroundColor:RM_COLORS[rm]+'18', spanGaps:true}]},
+      const arr = fTrim(seriesFor(name)).map(v=>v===null?NaN:v);
+      const color = colorFor(name);
+      charts[id] = new Chart(el, {type:'line', data:{labels:arr.map((_,j)=>j), datasets:[{data:arr, borderColor:color, borderWidth:1.8, pointRadius:0, tension:.35, fill:true, backgroundColor:color+'18', spanGaps:true}]},
         options:{responsive:true, maintainAspectRatio:false, animation:{duration:0}, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}}}});
     });
   }
@@ -2553,90 +2760,125 @@ function initDashboard(){
     const metric = fState.metric, meta = METRIC_META[metric];
     document.getElementById('f_trendTitle').innerHTML = meta.label + ` <span class="tag">${meta.unit}</span>`;
     const weeks = fWeeks();
-    const rmsToShow = fState.rm==="Grand Total" ? gInScopeRms() : [fState.rm];
-    const datasets = rmsToShow.map(rm=>({
-      label:rm, data: fTrim(rmSeries(metric, rm)), borderColor:RM_COLORS[rm], backgroundColor:RM_COLORS[rm]+'1c',
-      borderWidth: fState.rm==="Grand Total"?1.8:2.6, tension:.3, spanGaps:true, pointRadius:0, fill: fState.rm!=="Grand Total"
-    }));
-    if(fState.rm==="Grand Total"){
+    const all = focusIsAll();
+    const rmsToShow = all ? rmsInFocusScope() : [];
+    const datasets = all
+      ? rmsToShow.map(rm=>({ label:rm, data: fTrim(rmSeries(metric, rm)), borderColor:RM_COLORS[rm], backgroundColor:RM_COLORS[rm]+'1c', borderWidth:1.8, tension:.3, spanGaps:true, pointRadius:0, fill:false }))
+      : [{ label:focusLabel(), data: fTrim(focusSeries(metric)), borderColor:focusColor(metric), backgroundColor:focusColor(metric)+'1c', borderWidth:2.6, tension:.3, spanGaps:true, pointRadius:0, fill:true }];
+    if(all){
       const gt = fTrim(rmSeries(metric, "Grand Total"));
       datasets.push({label:"Grand Total", data:gt, borderColor:"#1c1c1e", borderWidth:3, tension:.3, spanGaps:true, pointRadius:0, borderDash:[6,3], fill:false});
     }
-    document.getElementById('f_trendSub').textContent = `Weeks ${weeks[0]}–${weeks[weeks.length-1]}`;
+    document.getElementById('f_trendSub').textContent = (all?'':focusLabel()+' · ') + `Weeks ${weeks[0]}–${weeks[weeks.length-1]}`;
     charts.f_trend = new Chart(document.getElementById('f_trendChart'), { type:'line', data:{labels: weeks.map(w=>'W'+w), datasets},
-      options:{...chartDefaults, plugins:{...chartDefaults.plugins, legend:{...chartDefaults.plugins.legend, position:'bottom'}},
-        onClick:(evt,els)=>{ if(els.length) drillRmMetric(datasets[els[0].datasetIndex].label, metric); } } });
+      options:{...chartDefaults, plugins:{...chartDefaults.plugins, legend:{...chartDefaults.plugins.legend, position:'bottom', display:all}},
+        onClick:(evt,els)=>{ if(all && els.length) setFocus({level:'rm', rm:datasets[els[0].datasetIndex].label}); } } });
   }
   function renderFullShare(){
     destroyChart('f_share');
     const metric = fState.metric, meta = METRIC_META[metric];
-    // Region-filter fix: was hardcoded to DATA.rms, so this doughnut always
-    // showed every region even when a single region was selected above.
-    const rmsForShare = fState.rm==="Grand Total" ? gInScopeRms() : [fState.rm];
-    document.getElementById('f_doughnutSub').textContent = 'YTD ' + (meta.unit==='%'?'average':'sum') + ' by region';
-    const vals = rmsForShare.map(rm => meta.unit==='%' ? (ytdAvg(metric,rm)||0) : ytdSum(metric,rm));
+    const all = focusIsAll();
+    const rmsForShare = all ? rmsInFocusScope() : [focusLabel()];
+    document.getElementById('f_doughnutSub').textContent = 'YTD ' + (meta.unit==='%'?'average':'sum') + (all ? ' by RM' : ' — focused node');
+    const vals = all ? rmsForShare.map(rm => meta.unit==='%' ? (ytdAvg(metric,rm)||0) : ytdSum(metric,rm)) : [meta.unit==='%' ? (fTrim(focusSeries(metric)).filter(v=>typeof v==='number').reduce((a,b)=>a+b,0)/(fTrim(focusSeries(metric)).filter(v=>typeof v==='number').length||1)||0) : fTrim(focusSeries(metric)).reduce((a,b)=>a+(typeof b==='number'?b:0),0)];
     const valsTotal = vals.reduce((a,b)=>a+(b||0),0);
-    charts.f_share = new Chart(document.getElementById('f_shareChart'), { type:'doughnut', data:{labels:rmsForShare, datasets:[{data:vals, backgroundColor:rmsForShare.map(r=>RM_COLORS[r]), borderColor:'#ffffff', borderWidth:3, hoverOffset:8}]},
+    const colors = all ? rmsForShare.map(r=>RM_COLORS[r]) : [focusColor(metric)];
+    charts.f_share = new Chart(document.getElementById('f_shareChart'), { type:'doughnut', data:{labels:rmsForShare, datasets:[{data:vals, backgroundColor:colors, borderColor:'#ffffff', borderWidth:3, hoverOffset:8}]},
       options:{responsive:true, maintainAspectRatio:false, cutout:'62%', plugins:{legend:{position:'right', labels:{color:'#78766f', font:{size:10.5}, boxWidth:10, padding:10}}, tooltip:chartDefaults.plugins.tooltip,
         datalabels:{ display:true, color:'#1c1c1e', font:{family:'JetBrains Mono', size:10.5, weight:700}, formatter:v=>fmtCompact(v, meta.unit) } },
         onHover:(evt,els)=>{ evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
-        onClick:(evt,els)=>{ if(els.length){ const rm=rmsForShare[els[0].index]; drillShare(rm, metric, vals[els[0].index], valsTotal); } } } });
+        onClick:(evt,els)=>{ if(all && els.length){ const rm=rmsForShare[els[0].index]; drillShare(rm, metric, vals[els[0].index], valsTotal); } } } });
   }
   function fMiniLine(canvasId, metric){
     destroyChart(canvasId);
     const meta = METRIC_META[metric];
     const weeks = fWeeks();
-    const rmsToShow = fState.rm==="Grand Total" ? ["Grand Total"] : [fState.rm];
-    const datasets = rmsToShow.map(rm=>({label:rm, data:fTrim(rmSeries(metric, rm)), borderColor:meta.color, backgroundColor:meta.color+'25', borderWidth:2.4, tension:.3, spanGaps:true, pointRadius:0, fill:true}));
-    charts[canvasId] = new Chart(document.getElementById(canvasId), {type:'line', data:{labels:weeks.map(w=>'W'+w), datasets},
-      options:{...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:false}},
-        onClick:()=> drillRmMetric(fState.rm, metric) }});
+    const all = focusIsAll();
+    const arr = fTrim(all ? rmSeries(metric, "Grand Total") : focusSeries(metric));
+    const label = all ? 'Grand Total' : focusLabel();
+    charts[canvasId] = new Chart(document.getElementById(canvasId), {type:'line', data:{labels:weeks.map(w=>'W'+w), datasets:[{label, data:arr, borderColor:meta.color, backgroundColor:meta.color+'25', borderWidth:2.4, tension:.3, spanGaps:true, pointRadius:0, fill:true}]},
+      options:{...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:false}}}});
   }
-  let fSortKey='spf', fSortDir=-1;
-  function renderFullLeaderboard(){
-    // Region-filter fix: was hardcoded to DATA.rms, ignoring the Region filter.
-    const rmsForBoard = fState.rm==="Grand Total" ? gInScopeRms() : [fState.rm];
-    const rows = rmsForBoard.map(rm=>{
-      const prc = lastValid(rmSeries("PRC Non*adherance", rm)).v;
-      const untrace = ytdSum("Untraceable (DH+ODH+MDH) * Count >1 Day", rm);
-      const spf = ytdSum("LM SPF loss * Overall", rm);
-      const fraud = ytdSum("Overall Fraud Loss (MPFBF)", rm);
-      const pendency = ytdSum("Overall Pendency(FA+NFA) *  (>2 Days) (DH+ODH+MDH)*Count", rm);
-      const trendArr = fTrim(rmSeries("LM SPF loss * Overall", rm)).filter(v=>typeof v==='number');
-      return {rm, prc, untrace, spf, fraud, pendency, trendArr};
+
+  function setFocus(f){ fFocus = f; renderFullTab(); }
+  function nodeId(level, ...parts){ return level+':'+parts.join('|'); }
+
+  function renderFullTree(){
+    const meta = METRIC_META[fState.metric];
+    document.getElementById('f_treeTag').textContent = meta.label + ' · ' + meta.unit;
+    const rowsHtml = [];
+    const sparkQueue = [];
+    function addRow(id, level, name, indent, value, expandable, expanded, color, count, sparkArr){
+      const sparkId = 'ft_spark-'+id.replace(/[^a-zA-Z0-9]/g,'_');
+      sparkQueue.push({ sparkId, arr: trimWindowArr(sparkArr, 12), color: color || meta.color });
+      const caret = expandable ? (expanded?'▾':'▸') : '';
+      rowsHtml.push(`<tr data-id="${escapeHtml(id)}" data-level="${level}">
+        <td class="name" style="padding-left:${14+indent*22}px;">
+          <span style="display:inline-block;width:14px;color:var(--ink-dim);">${caret}</span>
+          <span ${color?`style="color:${color};"`:''}>${escapeHtml(name)}</span>
+        </td>
+        <td ${indent===0?`style="color:${color};font-weight:700;"`:''}>${fmtVal(value, meta.unit)}</td>
+        <td>${count!=null?count:''}</td>
+        <td><div class="spark-td"><canvas id="${sparkId}"></canvas></div></td>
+      </tr>`);
+    }
+    const rms = fSortByValue(rmsInFocusScope(), fRmValue);
+    rms.forEach(rm=>{
+      const rmId = nodeId('rm', rm);
+      const rmExpanded = fExpanded.has(rmId);
+      addRow(rmId, 'rm', rm, 0, fRmValue(rm), true, rmExpanded, RM_COLORS[rm], null, rmSeries(fState.metric, rm));
+      if(rmExpanded){
+        let ams = gInScopeAms().filter(a=> (AM&&AM.amToRm?AM.amToRm[a]:null)===rm);
+        if(fState.am.size) ams = ams.filter(a=>fState.am.has(a));
+        fSortByValue(ams, fAmValue).forEach(am=>{
+          const amId = nodeId('am', rm, am);
+          const amExpanded = fExpanded.has(amId);
+          addRow(amId, 'am', am, 1, fAmValue(am), true, amExpanded, null, null, amSeries(fState.metric, am));
+          if(amExpanded){
+            let partners = [...new Set(HUB.rows.filter(h=>h[0]===am).map(h=>h[4]||'Unspecified'))];
+            if(fState.partner.size) partners = partners.filter(p=>fState.partner.has(p));
+            fSortByValue(partners, p=>fPartnerValue(am,p)).forEach(p=>{
+              const pId = nodeId('partner', am, p);
+              const hubCount = HUB.rows.filter(h=>h[0]===am && (h[4]||'Unspecified')===p).length;
+              addRow(pId, 'partner', p, 2, fPartnerValue(am,p), false, false, null, hubCount, partnerSeries(fState.metric, am, p));
+            });
+          }
+        });
+      }
     });
-    const keyMap = {name:'rm', prc:'prc', untrace:'untrace', spf:'spf', fraud:'fraud', pendency:'pendency'};
-    rows.sort((a,b)=>{ const k=keyMap[fSortKey]||'spf'; let av=a[k],bv=b[k]; if(typeof av==='string') return fSortDir*av.localeCompare(bv); av=av||0; bv=bv||0; return fSortDir*(av-bv); });
-    const maxSpf = Math.max(...rows.map(r=>r.spf||0),1);
-    document.getElementById('f_leaderBody').innerHTML = rows.map(r=>{
-      const prcBadge = r.prc>=99.5?'ok':r.prc>=99?'warn':'crit';
-      const sparkId = 'f_lb-'+r.rm.replace(/\s+/g,'');
-      return `<tr data-rm="${r.rm}"><td class="name" style="color:${RM_COLORS[r.rm]}">${r.rm}</td>
-        <td><span class="badge ${prcBadge}">${r.prc!==null?r.prc.toFixed(2)+'%':'—'}</span></td>
-        <td>${r.untrace.toLocaleString('en-IN')}</td>
-        <td><span class="bar-cell"><span class="bar-fill" style="transform:scaleX(${(r.spf/maxSpf).toFixed(3)});background:${RM_COLORS[r.rm]}"></span></span><span style="margin-left:6px;">${fmtMoney(r.spf)}</span></td>
-        <td>${fmtMoney(r.fraud)}</td><td>${r.pendency.toLocaleString('en-IN')}</td>
-        <td><div class="spark-td"><canvas id="${sparkId}"></canvas></div></td></tr>`;
-    }).join('');
-    rows.forEach(r=>{
-      const id='f_lb-'+r.rm.replace(/\s+/g,''); destroyChart(id);
-      const el=document.getElementById(id); if(!el) return;
-      charts[id] = new Chart(el, {type:'line', data:{labels:r.trendArr.map((_,i)=>i), datasets:[{data:r.trendArr, borderColor:RM_COLORS[r.rm], borderWidth:1.6, pointRadius:0, tension:.35, fill:false}]}, options:{responsive:true, maintainAspectRatio:false, animation:{duration:0}, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}}}});
+    document.getElementById('f_treeBody').innerHTML = rowsHtml.length ? rowsHtml.join('') : '<tr><td colspan="4" style="text-align:center;color:var(--ink-dim);padding:20px;">No RMs match the current filters.</td></tr>';
+    sparkQueue.forEach(({sparkId, arr, color})=>{
+      destroyChart(sparkId);
+      const el = document.getElementById(sparkId); if(!el) return;
+      const dense = arr.map(v=>v===null||v===undefined?NaN:v);
+      charts[sparkId] = new Chart(el, {type:'line', data:{labels:dense.map((_,j)=>j), datasets:[{data:dense, borderColor:color, borderWidth:1.6, pointRadius:0, tension:.35, fill:false}]}, options:{responsive:true, maintainAspectRatio:false, animation:{duration:0}, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}}}});
     });
-    document.querySelectorAll('#f_leaderTable th').forEach(th=> th.classList.toggle('sort-active', th.dataset.key===fSortKey));
-    document.querySelectorAll('#f_leaderBody tr').forEach(tr=>{
-      tr.addEventListener('click', ()=> drillRmMetric(tr.dataset.rm, "LM SPF loss * Overall"));
+    document.querySelectorAll('#f_treeBody tr[data-id]').forEach(tr=>{
+      tr.style.cursor = 'pointer';
+      tr.addEventListener('click', ()=>{
+        const id = tr.dataset.id, level = tr.dataset.level;
+        if(level==='rm'){
+          const rm = id.slice(3);
+          if(fExpanded.has(id)) fExpanded.delete(id); else fExpanded.add(id);
+          setFocus({level:'rm', rm});
+        } else if(level==='am'){
+          const [rm, am] = id.slice(3).split('|');
+          if(fExpanded.has(id)) fExpanded.delete(id); else fExpanded.add(id);
+          setFocus({level:'am', rm, am});
+        } else {
+          const [am, partner] = id.slice(8).split('|');
+          setFocus({level:'partner', am, partner});
+        }
+      });
     });
   }
-  document.querySelectorAll('#f_leaderTable th').forEach(th=>{
-    th.addEventListener('click', ()=>{ const key=th.dataset.key; if(fSortKey===key) fSortDir*=-1; else {fSortKey=key; fSortDir=-1;} renderFullLeaderboard(); });
-  });
+
   function renderFullTab(){
     renderFullKPIs(); renderFullTrend(); renderFullShare();
     fMiniLine('f_prcChart', "PRC Non*adherance");
     fMiniLine('f_untraceChart', "Untraceable (DH+ODH+MDH) * Count >1 Day");
     fMiniLine('f_fraudChart', "Overall Fraud Loss (MPFBF)");
-    renderFullLeaderboard();
+    renderFullTree();
   }
 
   // Expose per-tab renderers so renderActiveTab() (module scope) can reach
