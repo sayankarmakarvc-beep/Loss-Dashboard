@@ -439,29 +439,33 @@ body.modal-lock{overflow:hidden;}
   </div>
 
   <div class="body-layout">
-  <div class="sidebar glass" id="tabbar">
+  <div class="sidebar glass" id="tabbar" role="tablist" aria-label="Dashboard sections">
     <div class="sidebar-label">Navigate</div>
-    <button class="tabbtn active" data-tab="cmd">
+    <button class="tabbtn active" data-tab="cmd" role="tab" aria-selected="true" aria-controls="panel-cmd" id="tabbtn-cmd">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>
       Command Center
     </button>
-    <button class="tabbtn" data-tab="week">
+    <button class="tabbtn" data-tab="week" role="tab" aria-selected="false" aria-controls="panel-week" id="tabbtn-week">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
       Week View
     </button>
-    <button class="tabbtn" data-tab="month">
+    <button class="tabbtn" data-tab="month" role="tab" aria-selected="false" aria-controls="panel-month" id="tabbtn-month">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"></path><rect x="7" y="12" width="3" height="6"></rect><rect x="12" y="8" width="3" height="10"></rect><rect x="17" y="5" width="3" height="13"></rect></svg>
       Month-on-Month
     </button>
-    <button class="tabbtn" data-tab="hub">
+    <button class="tabbtn" data-tab="hub" role="tab" aria-selected="false" aria-controls="panel-hub" id="tabbtn-hub">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"></path><path d="M5 21V7l7-4 7 4v14"></path><path d="M9 9h1M9 13h1M14 9h1M14 13h1"></path></svg>
       Explorer
     </button>
-    <button class="tabbtn" data-tab="sheet">
+    <button class="tabbtn" data-tab="hublookup" role="tab" aria-selected="false" aria-controls="panel-hublookup" id="tabbtn-hublookup">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      Hub Lookup
+    </button>
+    <button class="tabbtn" data-tab="sheet" role="tab" aria-selected="false" aria-controls="panel-sheet" id="tabbtn-sheet">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line></svg>
       Sheet View
     </button>
-    <button class="tabbtn" data-tab="full">
+    <button class="tabbtn" data-tab="full" role="tab" aria-selected="false" aria-controls="panel-full" id="tabbtn-full">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
       Full View
     </button>
@@ -480,7 +484,7 @@ body.modal-lock{overflow:hidden;}
 
   <div class="main-col">
   <!-- ================= COMMAND CENTER ================= -->
-  <div class="tabpanel active" id="panel-cmd">
+  <div class="tabpanel active" id="panel-cmd" role="tabpanel" aria-labelledby="tabbtn-cmd">
     <div class="filterbar glass">
       <div><label>Category</label><select id="c_catFilter">
         <option value="all">All categories</option>
@@ -525,7 +529,7 @@ body.modal-lock{overflow:hidden;}
   </div>
 
   <!-- ================= WEEK VIEW ================= -->
-  <div class="tabpanel" id="panel-week">
+  <div class="tabpanel" id="panel-week" role="tabpanel" aria-labelledby="tabbtn-week">
     <div class="filterbar glass">
       <div><label>Region</label><select id="w_rmFilter"></select></div>
       <div><label>Week</label><select id="w_weekFilter"></select></div>
@@ -550,7 +554,7 @@ body.modal-lock{overflow:hidden;}
   </div>
 
   <!-- ================= MONTH VIEW ================= -->
-  <div class="tabpanel" id="panel-month">
+  <div class="tabpanel" id="panel-month" role="tabpanel" aria-labelledby="tabbtn-month">
     <div class="filterbar glass">
       <div><label>Region</label><select id="m_rmFilter"></select></div>
     </div>
@@ -578,7 +582,7 @@ body.modal-lock{overflow:hidden;}
   </div>
 
   <!-- ================= HUB VIEW ================= -->
-  <div class="tabpanel" id="panel-hub">
+  <div class="tabpanel" id="panel-hub" role="tabpanel" aria-labelledby="tabbtn-hub">
     <div class="filterbar glass">
       <div><label>Group by</label><select id="h_groupBy">
         <option value="hub">Hub</option>
@@ -618,8 +622,30 @@ body.modal-lock{overflow:hidden;}
     </div>
   </div>
 
+  <!-- ================= HUB LOOKUP ================= -->
+  <div class="tabpanel" id="panel-hublookup" role="tabpanel" aria-labelledby="tabbtn-hublookup">
+    <div class="filterbar glass">
+      <div><label>Hub name</label><input type="text" id="hl_search" list="hl_hubList" placeholder="Type a hub name…" style="min-width:280px;"></div>
+      <datalist id="hl_hubList"></datalist>
+      <div class="hint" style="margin:0;">Search any hub to see its full profile — AM, RM, Partner, Hub type, and every tracked primary metric.</div>
+    </div>
+    <div id="hl_empty" class="card glass tilt" style="text-align:center;padding:40px 20px;color:var(--ink-dim);">
+      Start typing a hub name above to look it up.
+    </div>
+    <div id="hl_content" style="display:none;">
+      <div class="card glass tilt">
+        <div class="card-hdr">
+          <div class="card-title" id="hl_hubName">—</div>
+          <div class="card-sub" id="hl_hubSub"></div>
+        </div>
+      </div>
+      <div class="kpirow" id="hl_kpiRow"></div>
+      <div class="grid3" id="hl_chartGrid"></div>
+    </div>
+  </div>
+
   <!-- ================= SHEET VIEW (raw-grid replica) ================= -->
-  <div class="tabpanel" id="panel-sheet">
+  <div class="tabpanel" id="panel-sheet" role="tabpanel" aria-labelledby="tabbtn-sheet">
     <div class="filterbar glass">
       <div><label>Region</label><select id="s_rmFilter"></select></div>
       <div><label>Weeks shown</label><select id="s_weekWindow">
@@ -649,7 +675,7 @@ body.modal-lock{overflow:hidden;}
   </div>
 
   <!-- ================= FULL VIEW ================= -->
-  <div class="tabpanel" id="panel-full">
+  <div class="tabpanel" id="panel-full" role="tabpanel" aria-labelledby="tabbtn-full">
     <div class="filterbar glass">
       <div><label>Region</label><select id="f_rmFilter"></select></div>
       <div><label>From week</label><select id="f_weekFromFilter"></select></div>
@@ -1100,9 +1126,10 @@ function openDrilldownUI(){
 let activeTab = 'cmd';
 document.querySelectorAll('.tabbtn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tabbtn').forEach(b=>{ b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
     document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
+    btn.setAttribute('aria-selected','true');
     activeTab = btn.dataset.tab;
     document.getElementById('panel-'+activeTab).classList.add('active');
     renderActiveTab();
@@ -1113,6 +1140,7 @@ function renderActiveTab(){
   else if(activeTab==='week') window.renderWeekTab();
   else if(activeTab==='month') window.renderMonthTab();
   else if(activeTab==='hub') window.renderHubTab();
+  else if(activeTab==='hublookup') window.renderHubLookupTab();
   else if(activeTab==='sheet') window.renderSheetTab();
   else if(activeTab==='full') window.renderFullTab();
 }
@@ -1696,6 +1724,76 @@ function initDashboard(){
         const r = limited[+tr.dataset.idx];
         if(hState.groupBy==='hub') drillHub(r);
         else drillGroup(GROUP_DIM_LABEL[hState.groupBy], GROUP_DIM_IDX[hState.groupBy], r.key, hubs);
+      });
+    });
+  }
+
+  /* ======================================================================
+     HUB LOOKUP — search a single hub by name, see its full profile:
+     AM/RM/Partner/Type header + a KPI tile and weekly chart per primary
+     metric (same 12 metrics HUB.rows carries, see pull_data.py PRIMARY_METRICS).
+     ====================================================================== */
+  const hlHubList = document.getElementById('hl_hubList');
+  hlHubList.innerHTML = HUB.rows.map(h=>`<option value="${h[1]}">`).join('');
+
+  document.getElementById('hl_search').addEventListener('input', debounce(e=>{
+    renderHubLookupTab(e.target.value.trim());
+  }, 200));
+
+  function renderHubLookupTab(query){
+    query = query===undefined ? document.getElementById('hl_search').value.trim() : query;
+    const empty = document.getElementById('hl_empty'), content = document.getElementById('hl_content');
+    if(!query){ empty.style.display=''; empty.textContent = 'Start typing a hub name above to look it up.'; content.style.display='none'; return; }
+    const q = query.toLowerCase();
+    const h = HUB.rows.find(r=>r[1].toLowerCase()===q) || HUB.rows.find(r=>r[1].toLowerCase().includes(q));
+    if(!h){
+      empty.style.display=''; empty.textContent = `No hub found matching "${query}".`;
+      content.style.display='none';
+      return;
+    }
+    empty.style.display='none'; content.style.display='';
+
+    document.getElementById('hl_hubName').textContent = h[1];
+    document.getElementById('hl_hubSub').textContent =
+      `RM: ${h[2]||'—'} · Current AM: ${h[0]||'—'} · Partner: ${h[4]||'—'} · Type: ${h[3]||'—'}`;
+
+    const kpiRow = document.getElementById('hl_kpiRow'); kpiRow.innerHTML='';
+    const chartGrid = document.getElementById('hl_chartGrid'); chartGrid.innerHTML='';
+
+    HUB_METRICS.forEach((metric,i)=>{
+      const meta = METRIC_META[metric];
+      const key = HUB_KEY_FOR_METRIC[metric];
+      const idx = 5 + HUB_METRIC_KEYS.indexOf(key);
+      const sparse = h[idx] || [];
+      const isPct = meta.unit==='%';
+      const last = hubSparseLast(sparse);
+      const ytd = isPct ? hubSparseSum(sparse, true) : hubSparseSum(sparse, false);
+
+      const kpi = document.createElement('div'); kpi.className='kpi glass tilt sev-neu clickable';
+      kpi.innerHTML = `<div class="kpi-label">${meta.label}</div><div class="kpi-value">${fmtVal(isPct?last:ytd, meta.unit)}</div>
+        <div class="kpi-delta flat">${isPct? 'latest reading' : 'YTD total'}</div><div class="kpi-spark-wrap"></div>`;
+      kpiRow.appendChild(kpi);
+
+      const cardId = 'hl_chart-'+i;
+      const card = document.createElement('div'); card.className='card glass tilt';
+      card.innerHTML = `<div class="card-hdr"><div class="card-title">${meta.label} <span class="tag">${meta.unit}</span></div></div>
+        <div class="chart-box short"><canvas id="${cardId}"></canvas></div>`;
+      chartGrid.appendChild(card);
+    });
+
+    HUB_METRICS.forEach((metric,i)=>{
+      const meta = METRIC_META[metric];
+      const key = HUB_KEY_FOR_METRIC[metric];
+      const idx = 5 + HUB_METRIC_KEYS.indexOf(key);
+      const sparse = h[idx] || [];
+      const dense = hubSparseToDense(sparse, HUB.weeks);
+      const id = 'hl_chart-'+i;
+      destroyChart(id);
+      const el = document.getElementById(id); if(!el) return;
+      charts[id] = new Chart(el, {
+        type:'line',
+        data:{ labels: dense.map((_,j)=>'W'+(j+1)), datasets:[{ data:dense, borderColor:meta.color, backgroundColor:meta.color+'22', borderWidth:2, tension:.3, spanGaps:true, pointRadius:0, fill:true }] },
+        options:{ ...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:false}} }
       });
     });
   }
