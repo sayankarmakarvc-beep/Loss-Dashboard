@@ -85,7 +85,13 @@ body{
 .tabpanel.active > *:nth-child(4){animation-delay:.17s;}
 .tabpanel.active > *:nth-child(5){animation-delay:.22s;}
 .tabpanel.active > *:nth-child(6){animation-delay:.27s;}
-@media (prefers-reduced-motion: reduce){ .tabpanel.active > *{animation:none;} }
+/* panel-level cross-fade on top of the child stagger above, so switching
+   tabs reads as a soft dissolve rather than an instant display:none<->block
+   swap (the swap itself is unavoidable without keeping every panel painted,
+   so this animates the panel in right as it becomes block). */
+@keyframes tabIn{ from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);} }
+.tabpanel.active{ animation:tabIn .32s cubic-bezier(.22,1,.36,1) both; }
+@media (prefers-reduced-motion: reduce){ .tabpanel.active > *, .tabpanel.active{animation:none;} }
 
 /* ---------- BRAND HEADER ---------- */
 .hdr{
@@ -461,6 +467,14 @@ body.modal-lock{overflow:hidden;}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
       Hub Lookup
     </button>
+    <button class="tabbtn" data-tab="am" role="tab" aria-selected="false" aria-controls="panel-am" id="tabbtn-am">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"></path></svg>
+      AM View
+    </button>
+    <button class="tabbtn" data-tab="rm" role="tab" aria-selected="false" aria-controls="panel-rm" id="tabbtn-rm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"></path><circle cx="12" cy="9" r="2.5"></circle></svg>
+      RM View
+    </button>
     <button class="tabbtn" data-tab="sheet" role="tab" aria-selected="false" aria-controls="panel-sheet" id="tabbtn-sheet">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line></svg>
       Sheet View
@@ -531,6 +545,7 @@ body.modal-lock{overflow:hidden;}
   <!-- ================= WEEK VIEW ================= -->
   <div class="tabpanel" id="panel-week" role="tabpanel" aria-labelledby="tabbtn-week">
     <div class="filterbar glass">
+      <div><label>AM</label><select id="w_amFilter"></select></div>
       <div><label>Region</label><select id="w_rmFilter"></select></div>
       <div><label>Week</label><select id="w_weekFilter"></select></div>
     </div>
@@ -556,6 +571,7 @@ body.modal-lock{overflow:hidden;}
   <!-- ================= MONTH VIEW ================= -->
   <div class="tabpanel" id="panel-month" role="tabpanel" aria-labelledby="tabbtn-month">
     <div class="filterbar glass">
+      <div><label>AM</label><select id="m_amFilter"></select></div>
       <div><label>Region</label><select id="m_rmFilter"></select></div>
     </div>
     <div class="card glass tilt" style="padding:12px 16px;">
@@ -644,9 +660,53 @@ body.modal-lock{overflow:hidden;}
     </div>
   </div>
 
+  <!-- ================= AM VIEW ================= -->
+  <div class="tabpanel" id="panel-am" role="tabpanel" aria-labelledby="tabbtn-am">
+    <div class="filterbar glass">
+      <div><label>AM name</label><input type="text" id="am_search" list="am_amList" placeholder="Type an AM name…" style="min-width:280px;"></div>
+      <datalist id="am_amList"></datalist>
+      <div class="hint" style="margin:0;">Search any AM to see the hubs, regions, and partners they span, plus every tracked primary metric aggregated across their scope.</div>
+    </div>
+    <div id="am_empty" class="card glass tilt" style="text-align:center;padding:40px 20px;color:var(--ink-dim);">
+      Start typing an AM name above to look it up.
+    </div>
+    <div id="am_content" style="display:none;">
+      <div class="card glass tilt">
+        <div class="card-hdr">
+          <div class="card-title" id="am_amName">—</div>
+          <div class="card-sub" id="am_amSub"></div>
+        </div>
+      </div>
+      <div class="kpirow" id="am_kpiRow"></div>
+      <div class="grid3" id="am_chartGrid"></div>
+    </div>
+  </div>
+
+  <!-- ================= RM VIEW ================= -->
+  <div class="tabpanel" id="panel-rm" role="tabpanel" aria-labelledby="tabbtn-rm">
+    <div class="filterbar glass">
+      <div><label>Region</label><select id="rm_rmSelect"></select></div>
+      <div class="hint" style="margin:0;">Full one-region dashboard across all 26 tracked metrics — latest value, WoW delta, and trend for each.</div>
+    </div>
+    <div id="rm_empty" class="card glass tilt" style="text-align:center;padding:40px 20px;color:var(--ink-dim);">
+      Select a region above to see its full dashboard.
+    </div>
+    <div id="rm_content" style="display:none;">
+      <div class="kpirow" id="rm_heroRow"></div>
+      <div class="card glass tilt">
+        <div class="card-hdr">
+          <div class="card-title">All Metrics <span class="tag" id="rm_gridTag">26 metrics</span></div>
+          <div class="card-sub">Latest value · WoW delta · trend · click a tile to drill in</div>
+        </div>
+        <div class="mgrid" id="rm_metricGrid"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= SHEET VIEW (raw-grid replica) ================= -->
   <div class="tabpanel" id="panel-sheet" role="tabpanel" aria-labelledby="tabbtn-sheet">
     <div class="filterbar glass">
+      <div><label>AM</label><select id="s_amFilter"></select></div>
       <div><label>Region</label><select id="s_rmFilter"></select></div>
       <div><label>Weeks shown</label><select id="s_weekWindow">
         <option value="6">Last 6 weeks</option>
@@ -677,6 +737,7 @@ body.modal-lock{overflow:hidden;}
   <!-- ================= FULL VIEW ================= -->
   <div class="tabpanel" id="panel-full" role="tabpanel" aria-labelledby="tabbtn-full">
     <div class="filterbar glass">
+      <div><label>AM</label><select id="f_amFilter"></select></div>
       <div><label>Region</label><select id="f_rmFilter"></select></div>
       <div><label>From week</label><select id="f_weekFromFilter"></select></div>
       <div><label>To week</label><select id="f_weekToFilter"></select></div>
@@ -871,6 +932,29 @@ function fmtCompact(v, unit){
   if(abs >= 1000) return (v/1000).toLocaleString('en-IN',{maximumFractionDigits:1})+'K';
   return Math.round(v).toLocaleString('en-IN');
 }
+
+// Shared count-up tween for KPI value text (used by the KPI rendering paths
+// touched in this pass: Week/Full's per-region KPIs and the new AM/RM View
+// tabs) so a filter change animates the number instead of hard-jumping.
+// Snaps straight to the final value (no tween) when there's no previous
+// value to animate from, when either side isn't a finite number, or when
+// the user prefers reduced motion.
+const PREFERS_REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function animateNumber(el, from, to, formatFn, duration){
+  if(!el) return;
+  duration = duration || 450;
+  if(from===null || from===undefined || !isFinite(from) || to===null || to===undefined || !isFinite(to) || PREFERS_REDUCED_MOTION){
+    el.textContent = formatFn(to);
+    return;
+  }
+  const start = performance.now();
+  (function tick(now){
+    const t = Math.min(1, (now-start)/duration);
+    const eased = 1 - Math.pow(1-t, 3);
+    el.textContent = formatFn(from + (to-from)*eased);
+    if(t<1) requestAnimationFrame(tick);
+  })(start);
+}
 if(window.ChartDataLabels) Chart.register(window.ChartDataLabels);
 Chart.defaults.set('plugins.datalabels', { display:false }); // opt-in per chart
 function lastValid(arr){
@@ -976,6 +1060,9 @@ function buildCategorizedPills(wrap, metrics, activeMetric, onSelect){
 // ---------- CHART REGISTRY ----------
 let charts = {};
 function destroyChart(key){ if(charts[key]){ charts[key].destroy(); delete charts[key]; } }
+// Previous raw KPI values, keyed by a caller-chosen stable id, so
+// animateNumber() has something to tween *from* on the next render.
+let kpiValCache = {};
 const chartDefaults = {
   responsive:true, maintainAspectRatio:false,
   animation:{ duration:320, easing:'easeOutQuint' },
@@ -1149,6 +1236,8 @@ function renderActiveTab(){
   else if(activeTab==='month') window.renderMonthTab();
   else if(activeTab==='hub') window.renderHubTab();
   else if(activeTab==='hublookup') window.renderHubLookupTab();
+  else if(activeTab==='am') window.renderAmTab();
+  else if(activeTab==='rm') window.renderRmTab();
   else if(activeTab==='sheet') window.renderSheetTab();
   else if(activeTab==='full') window.renderFullTab();
 }
@@ -1168,6 +1257,31 @@ function populateSidebarInfo(){
 function initDashboard(){
   populateSidebarInfo();
   const latestWeek = DATA.weeks[DATA.weeks.length-1];
+
+  // AM ↔ RM association, derived once from hub rows since no dedicated
+  // mapping table exists in the payload — used to narrow the Region
+  // dropdown when an AM filter is applied on Week/Month/Sheet/Full, and to
+  // power the AM View tab's search list.
+  const AM_RM_MAP = {};
+  HUB.rows.forEach(r=>{
+    const am = r[0], rm = r[2];
+    if(!am) return;
+    if(!AM_RM_MAP[am]) AM_RM_MAP[am] = new Set();
+    if(rm) AM_RM_MAP[am].add(rm);
+  });
+  const ALL_AMS = Object.keys(AM_RM_MAP).sort();
+
+  // Narrows a Region(RM) <select> to the RMs associated with `am` (plus the
+  // tab's own "all regions" option). If the select's current value no
+  // longer exists in the narrowed list it resets to the all-value. Returns
+  // the resulting (possibly reset) value so callers can update their state.
+  function narrowRmSelect(selectEl, am, allValue, allLabel, currentVal){
+    const rms = am==='all' ? DATA.rms : DATA.rms.filter(rm=> AM_RM_MAP[am] && AM_RM_MAP[am].has(rm));
+    selectEl.innerHTML = `<option value="${allValue}">${allLabel}</option>` + rms.map(r=>`<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+    const stillValid = currentVal===allValue || rms.includes(currentVal);
+    selectEl.value = stillValid ? currentVal : allValue;
+    return selectEl.value;
+  }
 
   /* ====================================================================
      COMMAND CENTER — one-screen overview across all 26 metrics: hero KPIs,
@@ -1314,13 +1428,18 @@ function initDashboard(){
     renderCommandCenterMovers();
   }
 
-  let wState = { rm: "Grand Total", week: latestWeek, metric: "LM SPF loss * Overall" };
+  let wState = { rm: "Grand Total", am: 'all', week: latestWeek, metric: "LM SPF loss * Overall" };
+
+  const wAmSel = document.getElementById('w_amFilter');
+  wAmSel.innerHTML = '<option value="all">All AMs</option>' + ALL_AMS.map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+  wAmSel.addEventListener('change', e=>{
+    wState.am = e.target.value;
+    wState.rm = narrowRmSelect(wRmSel, wState.am, 'Grand Total', 'All Regions', wState.rm);
+    renderWeekTab();
+  });
 
   const wRmSel = document.getElementById('w_rmFilter');
-  ["Grand Total", ...DATA.rms].forEach(rm=>{
-    const o=document.createElement('option'); o.value=rm; o.textContent = rm==="Grand Total"?"All Regions":rm; wRmSel.appendChild(o);
-  });
-  wRmSel.value = wState.rm;
+  narrowRmSelect(wRmSel, wState.am, 'Grand Total', 'All Regions', wState.rm);
   wRmSel.addEventListener('change', e=>{ wState.rm=e.target.value; renderWeekTab(); });
 
   const wWeekSel = document.getElementById('w_weekFilter');
@@ -1350,11 +1469,14 @@ function initDashboard(){
       const deltaClass = deltaPct>0.5?'up':(deltaPct<-0.5?'down':'flat');
       const arrow = deltaPct>0.5?'▲':(deltaPct<-0.5?'▼':'·');
       kpi.innerHTML = `<div class="kpi-label">${rm}</div>
-        <div class="kpi-value" style="color:${RM_COLORS[rm]}">${fmtVal(val, meta.unit)}</div>
+        <div class="kpi-value" style="color:${RM_COLORS[rm]}"></div>
         <div class="kpi-delta ${deltaClass}">${arrow} ${Math.abs(deltaPct).toFixed(1)}% vs prior wk</div>
         <div class="kpi-spark-wrap"><canvas id="w_spark-${i}"></canvas></div>`;
       kpi.addEventListener('click', ()=> drillRmMetric(rm, metric));
       row.appendChild(kpi);
+      const cacheKey = 'w_kpi_'+rm;
+      animateNumber(kpi.querySelector('.kpi-value'), kpiValCache[cacheKey], val, v=>fmtVal(v, meta.unit));
+      kpiValCache[cacheKey] = val;
     });
     rmsForKpi.forEach((rm,i)=>{
       destroyChart('w_spark-'+i);
@@ -1391,10 +1513,16 @@ function initDashboard(){
   /* ======================================================================
      MONTH VIEW — aggregate weeks into calendar months
      ====================================================================== */
-  let mState = { rm: "Grand Total", metric: "LM SPF loss * Overall" };
+  let mState = { rm: "Grand Total", am: 'all', metric: "LM SPF loss * Overall" };
+  const mAmSel = document.getElementById('m_amFilter');
+  mAmSel.innerHTML = '<option value="all">All AMs</option>' + ALL_AMS.map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+  mAmSel.addEventListener('change', e=>{
+    mState.am = e.target.value;
+    mState.rm = narrowRmSelect(mRmSel, mState.am, 'Grand Total', 'All Regions', mState.rm);
+    renderMonthTab();
+  });
   const mRmSel = document.getElementById('m_rmFilter');
-  ["Grand Total", ...DATA.rms].forEach(rm=>{ const o=document.createElement('option'); o.value=rm; o.textContent=rm==="Grand Total"?"All Regions":rm; mRmSel.appendChild(o); });
-  mRmSel.value = mState.rm;
+  narrowRmSelect(mRmSel, mState.am, 'Grand Total', 'All Regions', mState.rm);
   mRmSel.addEventListener('change', e=>{ mState.rm=e.target.value; renderMonthTab(); });
   buildCategorizedPills(document.getElementById('m_metricPills'), ALL_METRICS, mState.metric, m=>{ mState.metric=m; renderMonthTab(); });
 
@@ -1506,23 +1634,46 @@ function initDashboard(){
   const GROUP_DIM_PLURAL = { am:'AMs', hub:'hubs', rm:'RMs', partner:'Partners' };
 
   const hRmSel = document.getElementById('h_rmFilter');
-  hRmSel.innerHTML = '<option value="all">All Regions</option>' + DATA.rms.map(r=>`<option value="${r}">${r}</option>`).join('');
-  hRmSel.addEventListener('change', e=>{ hState.rm=e.target.value; renderHubTab(); });
-
   const hTypeSel = document.getElementById('h_typeFilter');
-  const hubTypes = [...new Set(HUB.rows.map(r=>r[3]).filter(Boolean))].sort();
-  hTypeSel.innerHTML = '<option value="all">All types</option>' + hubTypes.map(t=>`<option value="${t}">${t}</option>`).join('');
-  hTypeSel.addEventListener('change', e=>{ hState.type=e.target.value; renderHubTab(); });
-
   const hAmSel = document.getElementById('h_amFilter');
-  const hubAms = [...new Set(HUB.rows.map(r=>r[0]).filter(Boolean))].sort();
-  hAmSel.innerHTML = '<option value="all">All AMs</option>' + hubAms.map(a=>`<option value="${a}">${a}</option>`).join('');
-  hAmSel.addEventListener('change', e=>{ hState.am=e.target.value; renderHubTab(); });
-
   const hPartnerSel = document.getElementById('h_partnerFilter');
-  const hubPartners = [...new Set(HUB.rows.map(r=>r[4]).filter(Boolean))].sort();
-  hPartnerSel.innerHTML = '<option value="all">All Partners</option>' + hubPartners.map(p=>`<option value="${p}">${p}</option>`).join('');
-  hPartnerSel.addEventListener('change', e=>{ hState.partner=e.target.value; renderHubTab(); });
+
+  // Cross-filter fix: these four selects used to each list every value seen
+  // across ALL hubs, independent of the other three — so picking an AM
+  // never narrowed which RM/Type/Partner options made sense, and an
+  // impossible combination just silently produced zero rows ("filters that
+  // seem to stop working"). Each select's option list is now rebuilt from
+  // the hubs that match the OTHER three active filters, so only real
+  // combinations can be picked; a selection that's no longer valid resets
+  // to "all" instead of leaving a dead filter behind.
+  function hubFacetValues(dimIdx, excludeKey){
+    return HUB.rows.filter(r=>{
+      if(excludeKey!=='rm' && hState.rm!=='all' && r[2]!==hState.rm) return false;
+      if(excludeKey!=='type' && hState.type!=='all' && r[3]!==hState.type) return false;
+      if(excludeKey!=='am' && hState.am!=='all' && r[0]!==hState.am) return false;
+      if(excludeKey!=='partner' && hState.partner!=='all' && r[4]!==hState.partner) return false;
+      return true;
+    }).map(r=>r[dimIdx]).filter(Boolean);
+  }
+  function refreshHubSelect(selectEl, dimIdx, excludeKey, currentVal, allLabel){
+    const vals = [...new Set(hubFacetValues(dimIdx, excludeKey))].sort();
+    selectEl.innerHTML = `<option value="all">${allLabel}</option>` + vals.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+    const stillValid = currentVal==='all' || vals.includes(currentVal);
+    selectEl.value = stillValid ? currentVal : 'all';
+    return selectEl.value;
+  }
+  function refreshHubFilterOptions(){
+    hState.rm = refreshHubSelect(hRmSel, 2, 'rm', hState.rm, 'All Regions');
+    hState.type = refreshHubSelect(hTypeSel, 3, 'type', hState.type, 'All types');
+    hState.am = refreshHubSelect(hAmSel, 0, 'am', hState.am, 'All AMs');
+    hState.partner = refreshHubSelect(hPartnerSel, 4, 'partner', hState.partner, 'All Partners');
+  }
+  refreshHubFilterOptions();
+
+  hRmSel.addEventListener('change', e=>{ hState.rm=e.target.value; refreshHubFilterOptions(); renderHubTab(); });
+  hTypeSel.addEventListener('change', e=>{ hState.type=e.target.value; refreshHubFilterOptions(); renderHubTab(); });
+  hAmSel.addEventListener('change', e=>{ hState.am=e.target.value; refreshHubFilterOptions(); renderHubTab(); });
+  hPartnerSel.addEventListener('change', e=>{ hState.partner=e.target.value; refreshHubFilterOptions(); renderHubTab(); });
 
   document.getElementById('h_groupBy').addEventListener('change', e=>{ hState.groupBy=e.target.value; renderHubTab(); });
 
@@ -1546,6 +1697,31 @@ function initDashboard(){
     const dense = new Array(weeksN).fill(null);
     for(let i=0;i<sparseArr.length;i+=2){ dense[sparseArr[i]-1] = sparseArr[i+1]; }
     return dense;
+  }
+
+  // Aggregates one of the 12 primary hub metrics across an arbitrary list of
+  // hub rows (one row for Hub Lookup, many for AM View) into a per-week
+  // dense series plus latest/YTD summary values — sum per week for
+  // count/₹L metrics, average per week for % metrics. Built on the same
+  // hubSparseSum/hubSparseLast/hubSparseToDense primitives so a single row
+  // produces byte-identical numbers to what Hub Lookup showed before this
+  // was factored out; shared here so AM View can't drift from it.
+  function aggregateHubMetric(hubRows, metric){
+    const meta = METRIC_META[metric];
+    const key = HUB_KEY_FOR_METRIC[metric];
+    const idx = 5 + HUB_METRIC_KEYS.indexOf(key);
+    const isPct = meta.unit==='%';
+    const sums = new Array(HUB.weeks).fill(0);
+    const counts = new Array(HUB.weeks).fill(0);
+    hubRows.forEach(h=>{
+      const sparse = h[idx] || [];
+      for(let i=0;i<sparse.length;i+=2){ const wi=sparse[i]-1; sums[wi]+=sparse[i+1]; counts[wi]++; }
+    });
+    const dense = sums.map((s,i)=> counts[i] ? (isPct ? s/counts[i] : s) : null);
+    const {v:last} = lastValid(dense);
+    const validVals = dense.filter(v=>v!==null);
+    const ytd = validVals.length ? (isPct ? validVals.reduce((a,b)=>a+b,0)/validVals.length : validVals.reduce((a,b)=>a+b,0)) : null;
+    return { meta, last, ytd, dense };
   }
 
   function filteredHubs(){
@@ -1774,13 +1950,8 @@ function initDashboard(){
     const chartGrid = document.getElementById('hl_chartGrid'); chartGrid.innerHTML='';
 
     HUB_METRICS.forEach((metric,i)=>{
-      const meta = METRIC_META[metric];
-      const key = HUB_KEY_FOR_METRIC[metric];
-      const idx = 5 + HUB_METRIC_KEYS.indexOf(key);
-      const sparse = h[idx] || [];
+      const {meta, last, ytd} = aggregateHubMetric([h], metric);
       const isPct = meta.unit==='%';
-      const last = hubSparseLast(sparse);
-      const ytd = isPct ? hubSparseSum(sparse, true) : hubSparseSum(sparse, false);
 
       const kpi = document.createElement('div'); kpi.className='kpi glass tilt sev-neu clickable';
       kpi.innerHTML = `<div class="kpi-label">${meta.label}</div><div class="kpi-value">${fmtVal(isPct?last:ytd, meta.unit)}</div>
@@ -1795,11 +1966,7 @@ function initDashboard(){
     });
 
     HUB_METRICS.forEach((metric,i)=>{
-      const meta = METRIC_META[metric];
-      const key = HUB_KEY_FOR_METRIC[metric];
-      const idx = 5 + HUB_METRIC_KEYS.indexOf(key);
-      const sparse = h[idx] || [];
-      const dense = hubSparseToDense(sparse, HUB.weeks);
+      const {meta, dense} = aggregateHubMetric([h], metric);
       const id = 'hl_chart-'+i;
       destroyChart(id);
       const el = document.getElementById(id); if(!el) return;
@@ -1812,13 +1979,160 @@ function initDashboard(){
   }
 
   /* ======================================================================
+     AM VIEW — search a single AM, see everything they touch: all hubs
+     across every RM/Partner they span, aggregated across the same 12
+     primary metrics as Hub Lookup (via the shared aggregateHubMetric()
+     above so the two tabs can't drift apart).
+     ====================================================================== */
+  const amAmList = document.getElementById('am_amList');
+  amAmList.innerHTML = ALL_AMS.map(a=>`<option value="${escapeHtml(a)}">`).join('');
+
+  document.getElementById('am_search').addEventListener('input', debounce(e=>{
+    renderAmTab(e.target.value.trim());
+  }, 200));
+
+  function renderAmTab(query){
+    query = query===undefined ? document.getElementById('am_search').value.trim() : query;
+    const empty = document.getElementById('am_empty'), content = document.getElementById('am_content');
+    if(!query){ empty.style.display=''; empty.textContent = 'Start typing an AM name above to look it up.'; content.style.display='none'; return; }
+    const q = query.toLowerCase();
+    const am = ALL_AMS.find(a=>a.toLowerCase()===q) || ALL_AMS.find(a=>a.toLowerCase().includes(q));
+    if(!am){
+      empty.style.display=''; empty.textContent = `No AM found matching "${query}".`;
+      content.style.display='none';
+      return;
+    }
+    empty.style.display='none'; content.style.display='';
+
+    const hubs = HUB.rows.filter(r=>r[0]===am);
+    const rms = [...new Set(hubs.map(h=>h[2]).filter(Boolean))].sort();
+    const partners = [...new Set(hubs.map(h=>h[4]).filter(Boolean))].sort();
+
+    document.getElementById('am_amName').textContent = am;
+    document.getElementById('am_amSub').textContent =
+      `${hubs.length} hub${hubs.length===1?'':'s'} · Regions: ${rms.join(', ')||'—'} · Partners: ${partners.length}`;
+
+    const kpiRow = document.getElementById('am_kpiRow'); kpiRow.innerHTML='';
+    const chartGrid = document.getElementById('am_chartGrid'); chartGrid.innerHTML='';
+
+    HUB_METRICS.forEach((metric,i)=>{
+      const {meta, last, ytd} = aggregateHubMetric(hubs, metric);
+      const isPct = meta.unit==='%';
+
+      const kpi = document.createElement('div'); kpi.className='kpi glass tilt sev-neu';
+      kpi.innerHTML = `<div class="kpi-label">${meta.label}</div><div class="kpi-value"></div>
+        <div class="kpi-delta flat">${isPct? 'latest reading (avg)' : 'YTD total'} · ${hubs.length} hubs</div><div class="kpi-spark-wrap"></div>`;
+      kpiRow.appendChild(kpi);
+      const cacheKey = 'am_kpi_'+metric;
+      const shown = isPct?last:ytd;
+      animateNumber(kpi.querySelector('.kpi-value'), kpiValCache[cacheKey], shown, v=>fmtVal(v, meta.unit));
+      kpiValCache[cacheKey] = shown;
+
+      const cardId = 'am_chart-'+i;
+      const card = document.createElement('div'); card.className='card glass tilt';
+      card.innerHTML = `<div class="card-hdr"><div class="card-title">${meta.label} <span class="tag">${meta.unit}</span></div></div>
+        <div class="chart-box short"><canvas id="${cardId}"></canvas></div>`;
+      chartGrid.appendChild(card);
+    });
+
+    HUB_METRICS.forEach((metric,i)=>{
+      const {meta, dense} = aggregateHubMetric(hubs, metric);
+      const id = 'am_chart-'+i;
+      destroyChart(id);
+      const el = document.getElementById(id); if(!el) return;
+      charts[id] = new Chart(el, {
+        type:'line',
+        data:{ labels: dense.map((_,j)=>'W'+(j+1)), datasets:[{ data:dense, borderColor:meta.color, backgroundColor:meta.color+'22', borderWidth:2, tension:.3, spanGaps:true, pointRadius:0, fill:true }] },
+        options:{ ...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:false}} }
+      });
+    });
+  }
+
+  /* ======================================================================
+     RM VIEW — pick one Region and see a full dashboard built on the rich
+     26-metric DATA.rm.metrics (unlike Hub/AM View, which only carry the 12
+     hub-level PRIMARY_METRICS). Reuses weekDelta()/isBadDelta() from the
+     Command Center section above and the same .mtile grid markup, so this
+     is effectively "Command Center scoped to one RM" rather than new logic.
+     ====================================================================== */
+  const rmRmSel = document.getElementById('rm_rmSelect');
+  rmRmSel.innerHTML = '<option value="">Select a region…</option>' + DATA.rms.map(r=>`<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+  rmRmSel.addEventListener('change', e=>{ renderRmTab(e.target.value); });
+
+  function renderRmTab(rmVal){
+    rmVal = rmVal===undefined ? document.getElementById('rm_rmSelect').value : rmVal;
+    const empty = document.getElementById('rm_empty'), content = document.getElementById('rm_content');
+    if(!rmVal){ empty.style.display=''; content.style.display='none'; return; }
+    empty.style.display='none'; content.style.display='';
+    const rm = rmVal;
+
+    const heroRow = document.getElementById('rm_heroRow'); heroRow.innerHTML='';
+    const heroSpecs = [
+      {label:'SPF + Fraud Loss (YTD)', metrics:['LM SPF loss * Overall','Overall Fraud Loss (MPFBF)'], unit:'₹L', agg:'sum'},
+      {label:'Overall Pendency (YTD)', metrics:['Overall Pendency(FA+NFA) *  (>2 Days) (DH+ODH+MDH)*Count'], unit:'count', agg:'sum'},
+      {label:'Untraceable (YTD)', metrics:['Untraceable (DH+ODH+MDH) * Count >1 Day'], unit:'count', agg:'sum'},
+      {label:'Avg PRC Adherence', metrics:['PRC Non*adherance'], unit:'%', agg:'avg'},
+      {label:'Avg CV Adherence', metrics:['CV Adherence'], unit:'%', agg:'avg'},
+    ];
+    heroSpecs.forEach(spec=>{
+      let val;
+      if(spec.agg==='sum') val = spec.metrics.reduce((s,m)=> s + ytdSum(m,rm), 0);
+      else val = spec.metrics.reduce((s,m)=> s + (ytdAvg(m,rm)||0), 0) / spec.metrics.length;
+      const kpi = document.createElement('div'); kpi.className='kpi glass tilt sev-neu'+(spec.metrics.length===1?' clickable':'');
+      kpi.innerHTML = `<div class="kpi-label">${spec.label}</div><div class="kpi-value"></div>
+        <div class="kpi-delta flat">FY2026 · ${rm}</div><div class="kpi-spark-wrap"></div>`;
+      if(spec.metrics.length===1) kpi.addEventListener('click', ()=> drillRmMetric(rm, spec.metrics[0]));
+      heroRow.appendChild(kpi);
+      const cacheKey = 'rm_hero_'+spec.label;
+      animateNumber(kpi.querySelector('.kpi-value'), kpiValCache[cacheKey], val, v=>fmtVal(v, spec.unit));
+      kpiValCache[cacheKey] = val;
+    });
+
+    document.getElementById('rm_gridTag').textContent = ALL_METRICS.length + ' metrics';
+    const grid = document.getElementById('rm_metricGrid'); grid.innerHTML='';
+    ALL_METRICS.forEach((m,i)=>{
+      const meta = METRIC_META[m];
+      const {last, deltaPct} = weekDelta(m, rm);
+      const bad = isBadDelta(meta, deltaPct);
+      const deltaClass = Math.abs(deltaPct)<2 ? 'flat' : (bad?'up':'down');
+      const arrow = deltaPct>0.5?'▲':(deltaPct<-0.5?'▼':'·');
+      const tile = document.createElement('div'); tile.className='mtile glass tilt cat-'+meta.cat;
+      tile.innerHTML = `<div class="mtile-label">${meta.label}</div>
+        <div class="mtile-value"></div>
+        <div class="mtile-delta ${deltaClass}">${arrow} ${Math.abs(deltaPct).toFixed(1)}% WoW</div>
+        <div class="mtile-spark"><canvas id="rm_tile-${i}"></canvas></div>`;
+      tile.addEventListener('click', ()=> drillRmMetric(rm, m));
+      grid.appendChild(tile);
+      const cacheKey = 'rm_grid_'+m;
+      animateNumber(tile.querySelector('.mtile-value'), kpiValCache[cacheKey], last, v=>fmtVal(v, meta.unit));
+      kpiValCache[cacheKey] = last;
+    });
+    ALL_METRICS.forEach((m,i)=>{
+      const id='rm_tile-'+i; destroyChart(id);
+      const el = document.getElementById(id); if(!el) return;
+      const arr = trimWindowArr((DATA.metrics[m]||{})[rm]||[], 12).map(v=>v===null?NaN:v);
+      const meta = METRIC_META[m];
+      charts[id] = new Chart(el, {type:'line', data:{labels:arr.map((_,j)=>j), datasets:[{data:arr, borderColor:meta.color, borderWidth:1.8, pointRadius:0, tension:.35, fill:true, backgroundColor:meta.color+'18', spanGaps:true}]},
+        options:{responsive:true, maintainAspectRatio:false, animation:{duration:0}, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}}}});
+    });
+  }
+
+  /* ======================================================================
      SHEET VIEW — raw grid replica: GM/RM rows, per-week columns, sparkline,
      conditional coloring, grand totals. Mirrors the source sheet layout.
      ====================================================================== */
-  let sState = { rm:'all', metric: "PRC Non*adherance", weekWindow: 12 };
+  let sState = { rm:'all', am:'all', metric: "PRC Non*adherance", weekWindow: 12 };
+
+  const sAmSel = document.getElementById('s_amFilter');
+  sAmSel.innerHTML = '<option value="all">All AMs</option>' + ALL_AMS.map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+  sAmSel.addEventListener('change', e=>{
+    sState.am = e.target.value;
+    sState.rm = narrowRmSelect(sRmSel, sState.am, 'all', 'All Regions', sState.rm);
+    renderSheetTab();
+  });
 
   const sRmSel = document.getElementById('s_rmFilter');
-  sRmSel.innerHTML = '<option value="all">All Regions</option>' + DATA.rms.map(r=>`<option value="${r}">${r}</option>`).join('');
+  narrowRmSelect(sRmSel, sState.am, 'all', 'All Regions', sState.rm);
   sRmSel.addEventListener('change', e=>{ sState.rm=e.target.value; renderSheetTab(); });
 
   document.getElementById('s_weekWindow').addEventListener('change', e=>{ sState.weekWindow=parseInt(e.target.value); renderSheetTab(); });
@@ -1907,10 +2221,16 @@ function initDashboard(){
   /* ======================================================================
      FULL VIEW — RM-level, all weeks (previous full dashboard)
      ====================================================================== */
-  let fState = { rm: "Grand Total", weekFrom: DATA.weeks[0], weekTo: DATA.weeks[DATA.weeks.length-1], metric: "LM SPF loss * Overall" };
+  let fState = { rm: "Grand Total", am: 'all', weekFrom: DATA.weeks[0], weekTo: DATA.weeks[DATA.weeks.length-1], metric: "LM SPF loss * Overall" };
+  const fAmSel = document.getElementById('f_amFilter');
+  fAmSel.innerHTML = '<option value="all">All AMs</option>' + ALL_AMS.map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+  fAmSel.addEventListener('change', e=>{
+    fState.am = e.target.value;
+    fState.rm = narrowRmSelect(fRmSel, fState.am, 'Grand Total', 'All Regions (Grand Total)', fState.rm);
+    renderFullTab();
+  });
   const fRmSel = document.getElementById('f_rmFilter');
-  ["Grand Total", ...DATA.rms].forEach(rm=>{ const o=document.createElement('option'); o.value=rm; o.textContent=rm==="Grand Total"?"All Regions (Grand Total)":rm; fRmSel.appendChild(o); });
-  fRmSel.value = fState.rm;
+  narrowRmSelect(fRmSel, fState.am, 'Grand Total', 'All Regions (Grand Total)', fState.rm);
   fRmSel.addEventListener('change', e=>{ fState.rm=e.target.value; renderFullTab(); });
 
   const fWeekFromSel = document.getElementById('f_weekFromFilter');
@@ -1950,11 +2270,14 @@ function initDashboard(){
       const {v:last} = lastValid(arr);
       const ytd = meta.unit==='%' ? (arr.filter(v=>typeof v==='number').reduce((a,b)=>a+b,0) / (arr.filter(v=>typeof v==='number').length||1)) : arr.reduce((a,b)=>a+(typeof b==='number'?b:0),0);
       const kpi = document.createElement('div'); kpi.className='kpi glass tilt clickable sev-neu';
-      kpi.innerHTML = `<div class="kpi-label">${rm}</div><div class="kpi-value" style="color:${RM_COLORS[rm]}">${fmtVal(last, meta.unit)}</div>
+      kpi.innerHTML = `<div class="kpi-label">${rm}</div><div class="kpi-value" style="color:${RM_COLORS[rm]}"></div>
         <div class="kpi-delta flat">${meta.unit==='%'?'range avg':'range total'}: ${fmtVal(ytd, meta.unit)}</div>
         <div class="kpi-spark-wrap"><canvas id="f_kpispark-${i}"></canvas></div>`;
       kpi.addEventListener('click', ()=> drillRmMetric(rm, metric));
       row.appendChild(kpi);
+      const cacheKey = 'f_kpi_'+rm;
+      animateNumber(kpi.querySelector('.kpi-value'), kpiValCache[cacheKey], last, v=>fmtVal(v, meta.unit));
+      kpiValCache[cacheKey] = last;
     });
     rmsForKpi.forEach((rm,i)=>{
       const id = 'f_kpispark-'+i; destroyChart(id);
@@ -2062,6 +2385,8 @@ function initDashboard(){
   window.renderMonthTab = renderMonthTab;
   window.renderHubTab = renderHubTab;
   window.renderHubLookupTab = renderHubLookupTab;
+  window.renderAmTab = renderAmTab;
+  window.renderRmTab = renderRmTab;
   window.renderSheetTab = renderSheetTab;
   window.renderFullTab = renderFullTab;
 
