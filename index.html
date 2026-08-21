@@ -1382,6 +1382,72 @@ function initDashboard(){
   }
 
   /* ====================================================================
+     GLOBAL DRILLDOWN FILTER — RM pill-toggle + AM/Hub chip multi-select,
+     pinned above every tab. Narrows Command Center/Week/Month/Hub/Sheet/Full
+     via gFilter/gInScopeRms()/gInScopeHubs() (defined near the top of the
+     script). Hub Lookup, AM View and RM View are single-item lookup tools
+     and stay independent of it.
+     ==================================================================== */
+  const ALL_HUB_NAMES = [...new Set(HUB.rows.map(h=>h[1]))].sort();
+
+  const gfRmPills = document.getElementById('gf_rmPills');
+  DATA.rms.forEach(rm=>{
+    const p = document.createElement('div'); p.className='pill'; p.textContent = rm;
+    p.addEventListener('click', ()=>{
+      if(gFilter.rm.has(rm)){ gFilter.rm.delete(rm); p.classList.remove('active'); }
+      else { gFilter.rm.add(rm); p.classList.add('active'); }
+      onGlobalFilterChange();
+    });
+    gfRmPills.appendChild(p);
+  });
+
+  document.getElementById('gf_amList').innerHTML = ALL_AMS.map(a=>`<option value="${escapeHtml(a)}">`).join('');
+  document.getElementById('gf_hubList').innerHTML = ALL_HUB_NAMES.map(h=>`<option value="${escapeHtml(h)}">`).join('');
+
+  function renderGfChips(setKey, containerId){
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    [...gFilter[setKey]].forEach(val=>{
+      const chip = document.createElement('span'); chip.className='gfchip';
+      chip.textContent = val;
+      const rmBtn = document.createElement('button'); rmBtn.type='button'; rmBtn.textContent='×';
+      rmBtn.addEventListener('click', ()=>{ gFilter[setKey].delete(val); onGlobalFilterChange(); });
+      chip.appendChild(rmBtn);
+      frag.appendChild(chip);
+    });
+    el.appendChild(frag);
+  }
+  function addFromInput(inputEl, setKey, validValues){
+    const val = inputEl.value.trim();
+    if(!val || !validValues.includes(val)) return;
+    gFilter[setKey].add(val);
+    inputEl.value = '';
+    onGlobalFilterChange();
+  }
+  const gfAmInput = document.getElementById('gf_amInput');
+  gfAmInput.addEventListener('change', ()=> addFromInput(gfAmInput, 'am', ALL_AMS));
+  gfAmInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addFromInput(gfAmInput, 'am', ALL_AMS); } });
+  const gfHubInput = document.getElementById('gf_hubInput');
+  gfHubInput.addEventListener('change', ()=> addFromInput(gfHubInput, 'hub', ALL_HUB_NAMES));
+  gfHubInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addFromInput(gfHubInput, 'hub', ALL_HUB_NAMES); } });
+
+  document.getElementById('gf_clearBtn').addEventListener('click', ()=>{
+    gFilter.rm.clear(); gFilter.am.clear(); gFilter.hub.clear();
+    gfRmPills.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+    onGlobalFilterChange();
+  });
+
+  function onGlobalFilterChange(){
+    renderGfChips('am', 'gf_amChips');
+    renderGfChips('hub', 'gf_hubChips');
+    const n = gFilter.rm.size + gFilter.am.size + gFilter.hub.size;
+    document.getElementById('gf_count').textContent = n ? `(${n})` : '';
+    refreshHubFilterOptions();
+    renderActiveTab();
+  }
+
+  /* ====================================================================
      COMMAND CENTER — one-screen overview across all 26 metrics: hero KPIs,
      a filterable metric grid, an RM × metric severity heatmap, and the
      biggest week-over-week movers (good and bad). Everything here reads
@@ -1757,6 +1823,9 @@ function initDashboard(){
       if(excludeKey!=='type' && hState.type!=='all' && r[3]!==hState.type) return false;
       if(excludeKey!=='am' && hState.am!=='all' && r[0]!==hState.am) return false;
       if(excludeKey!=='partner' && hState.partner!=='all' && r[4]!==hState.partner) return false;
+      if(gFilter.rm.size && !gFilter.rm.has(r[2])) return false;
+      if(gFilter.am.size && !gFilter.am.has(r[0])) return false;
+      if(gFilter.hub.size && !gFilter.hub.has(r[1])) return false;
       return true;
     }).map(r=>r[dimIdx]).filter(Boolean);
   }
