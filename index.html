@@ -1869,7 +1869,7 @@ function initDashboard(){
     if(wState.am.size) ams = ams.filter(a=>wState.am.has(a));
     const wi2 = (AM&&AM.weeks) ? AM.weeks.indexOf(week) : -1;
     const order = ams.map(am=>({ am, v: wi2>=0 ? amSeries(metric, am)[wi2] : null }))
-      .sort((a,b)=> meta.invert ? (a.v??0)-(b.v??0) : (b.v??0)-(a.v??0));
+      .sort((a,b)=> { const av=a.v==null?0:a.v, bv=b.v==null?0:b.v; return meta.invert ? av-bv : bv-av; });
     document.getElementById('w_amBreakdownTitle').innerHTML = `AM breakdown — ${escapeHtml(rm)} <span class="tag">${meta.label} · Week ${week}</span>`;
     destroyChart('w_amBreakdown');
     charts.w_amBreakdown = new Chart(document.getElementById('w_amBreakdownChart'), {
@@ -2006,7 +2006,7 @@ function initDashboard(){
       const s = amMonthlySeries(metric, am);
       const latest = s.values.length ? s.values[s.values.length-1] : null;
       return { am, v: latest };
-    }).sort((a,b)=> meta.invert ? (a.v??0)-(b.v??0) : (b.v??0)-(a.v??0));
+    }).sort((a,b)=> { const av=a.v==null?0:a.v, bv=b.v==null?0:b.v; return meta.invert ? av-bv : bv-av; });
     document.getElementById('m_amBreakdownTitle').innerHTML = `AM breakdown — ${escapeHtml(rm)} <span class="tag">${meta.label} · latest month</span>`;
     destroyChart('m_amBreakdown');
     charts.m_amBreakdown = new Chart(document.getElementById('m_amBreakdownChart'), {
