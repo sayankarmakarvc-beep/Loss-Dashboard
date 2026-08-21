@@ -206,6 +206,18 @@ select:hover, input[type=text]:hover{border-color:var(--blue);}
 .pill:active{transform:translateY(0);}
 .pill.active{background:linear-gradient(135deg, var(--blue), var(--teal));color:#ffffff;border-color:transparent;box-shadow:0 3px 12px rgba(10,132,255,.35);transform:translateY(-1px);}
 
+/* ---------- GLOBAL DRILLDOWN FILTER BAR ---------- */
+.gfbar{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;padding:12px 18px;margin-bottom:16px;}
+.gfbar-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.gfbar-group input[type=text]{min-width:140px;padding:6px 10px;font-size:12.5px;}
+.gfbar-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);font-weight:700;}
+.gfbar-pills{display:flex;gap:6px;flex-wrap:wrap;}
+.gfbar-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.gfchip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;padding:5px 6px 5px 10px;border-radius:14px;background:rgba(10,132,255,.1);color:var(--blue);font-weight:600;}
+.gfchip button{border:none;background:rgba(10,132,255,.18);color:var(--blue);width:16px;height:16px;border-radius:50%;cursor:pointer;font-size:10px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;transition:.2s cubic-bezier(0.16,1,0.3,1);}
+.gfchip button:hover{background:var(--red);color:#fff;}
+#gf_count{opacity:.7;}
+
 /* category-grouped pill rows (used across Week/Month/Hub/Full/Sheet) */
 .pillrows{display:flex;flex-direction:column;gap:8px;width:100%;}
 .pillrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
@@ -500,6 +512,26 @@ body.modal-lock{overflow:hidden;}
   </div>
 
   <div class="main-col">
+  <!-- ================= GLOBAL DRILLDOWN FILTER ================= -->
+  <div class="card glass tilt gfbar" id="gfBar">
+    <div class="gfbar-group">
+      <span class="gfbar-label">Region</span>
+      <div class="gfbar-pills" id="gf_rmPills"></div>
+    </div>
+    <div class="gfbar-group">
+      <span class="gfbar-label">AM</span>
+      <input type="text" id="gf_amInput" list="gf_amList" placeholder="type + Enter…">
+      <datalist id="gf_amList"></datalist>
+      <div class="gfbar-chips" id="gf_amChips"></div>
+    </div>
+    <div class="gfbar-group">
+      <span class="gfbar-label">Hub</span>
+      <input type="text" id="gf_hubInput" list="gf_hubList" placeholder="type + Enter…">
+      <datalist id="gf_hubList"></datalist>
+      <div class="gfbar-chips" id="gf_hubChips"></div>
+    </div>
+    <button class="pill" id="gf_clearBtn" style="margin-left:auto;">Clear filters <span id="gf_count"></span></button>
+  </div>
   <!-- ================= COMMAND CENTER ================= -->
   <div class="tabpanel active" id="panel-cmd" role="tabpanel" aria-labelledby="tabbtn-cmd">
     <div class="filterbar glass">
@@ -682,6 +714,22 @@ body.modal-lock{overflow:hidden;}
       </div>
       <div class="kpirow" id="am_kpiRow"></div>
       <div class="grid3" id="am_chartGrid"></div>
+      <div class="grid">
+        <div class="card glass tilt">
+          <div class="card-hdr"><div class="card-title">Hub type distribution <span class="tag">this AM's hubs</span></div></div>
+          <div class="chart-box grande"><canvas id="am_typeChart"></canvas></div>
+        </div>
+        <div class="card glass tilt">
+          <div class="card-hdr">
+            <div class="card-title">Hubs <span class="tag" id="am_hubCountTag"></span></div>
+            <div class="card-sub">Click a row to drill into that hub</div>
+          </div>
+          <div class="tablewrap"><table id="am_hubTable">
+            <thead><tr><th>Hub</th><th>RM</th><th>Partner</th><th>Type</th></tr></thead>
+            <tbody id="am_hubBody"></tbody>
+          </table></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -969,17 +1017,64 @@ function prevValid(arr, beforeIdx){
   return null;
 }
 function ytdSum(metric, rm){
-  const arr = (DATA.metrics[metric]||{})[rm] || [];
+  const arr = rmSeries(metric, rm);
   return arr.reduce((a,b)=> a + (typeof b==='number'? b:0), 0);
 }
 function ytdAvg(metric, rm){
-  const arr = ((DATA.metrics[metric]||{})[rm] || []).filter(v=>typeof v==='number');
+  const arr = rmSeries(metric, rm).filter(v=>typeof v==='number');
   if(!arr.length) return null;
   return arr.reduce((a,b)=>a+b,0)/arr.length;
 }
 function trimWindowArr(arr, n){
   if(arr.length <= n) return arr;
   return arr.slice(arr.length - n);
+}
+
+// ---------- GLOBAL DRILLDOWN FILTER (RM + AM + Hub, applies across tabs) ----------
+// HUB.rows carries per-hub AM/RM/Partner/Type + 12 metric series, so Hub tab and
+// AM View can filter at true hub granularity. The other 26 metrics only exist as
+// one weekly series per RM in DATA.metrics (no per-AM or per-hub breakdown), so
+// for Week/Month/Sheet/Full/Command Center an AM or Hub pick can only narrow
+// *which RMs are in scope* — "Grand Total"/"All regions" then re-aggregates
+// across just those RMs instead of reading the precomputed Grand Total column.
+let gFilter = { rm: new Set(), am: new Set(), hub: new Set() };
+function gActive(){ return gFilter.rm.size>0 || gFilter.am.size>0 || gFilter.hub.size>0; }
+function gInScopeHubs(){
+  return HUB.rows.filter(h=>{
+    if(gFilter.rm.size && !gFilter.rm.has(h[2])) return false;
+    if(gFilter.am.size && !gFilter.am.has(h[0])) return false;
+    if(gFilter.hub.size && !gFilter.hub.has(h[1])) return false;
+    return true;
+  });
+}
+function gInScopeRms(){
+  if(!gActive()) return DATA.rms;
+  return DATA.rms.filter(rm=>{
+    if(gFilter.rm.size && !gFilter.rm.has(rm)) return false;
+    if(gFilter.am.size || gFilter.hub.size){
+      const ok = HUB.rows.some(h=> h[2]===rm
+        && (!gFilter.am.size || gFilter.am.has(h[0]))
+        && (!gFilter.hub.size || gFilter.hub.has(h[1])));
+      if(!ok) return false;
+    }
+    return true;
+  });
+}
+// Resolves a metric's weekly series for `rm`, honoring the global filter:
+// re-aggregates "Grand Total" across gInScopeRms() when a filter is active,
+// and returns an empty series for any specific RM the filter has excluded.
+function rmSeries(metric, rm){
+  if(rm==='Grand Total' && gActive()){
+    const rms = gInScopeRms();
+    const isPct = METRIC_META[metric].unit==='%';
+    return DATA.weeks.map((_,i)=>{
+      let sum=0, cnt=0;
+      rms.forEach(r=>{ const v=((DATA.metrics[metric]||{})[r]||[])[i]; if(v!==null && v!==undefined){ sum+=v; cnt++; } });
+      return cnt ? (isPct ? sum/cnt : sum) : null;
+    });
+  }
+  if(gActive() && rm!=='Grand Total' && !gInScopeRms().includes(rm)) return [];
+  return (DATA.metrics[metric]||{})[rm] || [];
 }
 // true when a WoW/MoM % move is a bad move for this metric (accounts for
 // "invert" metrics like adherence %, where going DOWN is bad).
@@ -1108,7 +1203,7 @@ function statTile(label, value){
 // Drill into a single RM's weekly trend for a given metric.
 function drillRmMetric(rm, metric){
   const meta = METRIC_META[metric];
-  const arr = (DATA.metrics[metric]||{})[rm] || [];
+  const arr = rmSeries(metric, rm);
   const {v:last} = lastValid(arr);
   const ytd = meta.unit==='%' ? ytdAvg(metric, rm) : ytdSum(metric, rm);
   const valid = arr.filter(v=>typeof v==='number');
@@ -1296,7 +1391,7 @@ function initDashboard(){
   document.getElementById('c_catFilter').addEventListener('change', e=>{ cState.cat=e.target.value; renderCommandCenter(); });
 
   function weekDelta(metric, rm){
-    const arr = (DATA.metrics[metric]||{})[rm] || [];
+    const arr = rmSeries(metric, rm);
     const {v:last, i:li} = lastValid(arr);
     if(last===null || li<0) return {last:null, deltaPct:0};
     const prev = prevValid(arr, li);
@@ -1318,7 +1413,7 @@ function initDashboard(){
     ];
     heroSpecs.forEach(spec=>{
       let val;
-      if(spec.agg==='hubs'){ val = HUB.rows.length; }
+      if(spec.agg==='hubs'){ val = gActive() ? gInScopeHubs().length : HUB.rows.length; }
       else if(spec.agg==='sum'){ val = spec.metrics.reduce((s,m)=> s + ytdSum(m,'Grand Total'), 0); }
       else { val = spec.metrics.reduce((s,m)=> s + (ytdAvg(m,'Grand Total')||0), 0) / spec.metrics.length; }
       const kpi = document.createElement('div'); kpi.className='kpi glass tilt sev-neu';
@@ -1353,7 +1448,7 @@ function initDashboard(){
     wanted.forEach((m,i)=>{
       const id='c_tile-'+i; destroyChart(id);
       const el = document.getElementById(id); if(!el) return;
-      const arr = trimWindowArr((DATA.metrics[m]||{})['Grand Total']||[], 12).map(v=>v===null?NaN:v);
+      const arr = trimWindowArr(rmSeries(m,'Grand Total'), 12).map(v=>v===null?NaN:v);
       const meta = METRIC_META[m];
       charts[id] = new Chart(el, {type:'line', data:{labels:arr.map((_,j)=>j), datasets:[{data:arr, borderColor:meta.color, borderWidth:1.8, pointRadius:0, tension:.35, fill:true, backgroundColor:meta.color+'18', spanGaps:true}]},
         options:{responsive:true, maintainAspectRatio:false, animation:{duration:0}, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}}}});
@@ -1379,14 +1474,14 @@ function initDashboard(){
     HEATMAP_METRICS.forEach(m=>{
       const meta = METRIC_META[m];
       if(meta.unit==='%') return;
-      const vals = DATA.rms.map(rm=> ({rm, v: ytdSum(m, rm)}));
+      const vals = gInScopeRms().map(rm=> ({rm, v: ytdSum(m, rm)}));
       const sorted = [...vals].sort((a,b)=>b.v-a.v); // highest = worst for non-invert loss/pendency/risk metrics
       const rankMap = {};
       sorted.forEach((x,i)=>{ rankMap[x.rm] = i / Math.max(1, sorted.length-1); }); // 0 = worst, 1 = best
       ranks[m] = rankMap;
     });
     const tbody = document.getElementById('c_heatTable').querySelector('tbody');
-    tbody.innerHTML = DATA.rms.map(rm=>{
+    tbody.innerHTML = gInScopeRms().map(rm=>{
       const cells = HEATMAP_METRICS.map(m=>{
         const meta = METRIC_META[m];
         let cls, val;
@@ -1464,9 +1559,9 @@ function initDashboard(){
     const row = document.getElementById('w_kpiRow');
     row.innerHTML = '';
     const frag = document.createDocumentFragment();
-    const rmsForKpi = wState.rm==="Grand Total" ? DATA.rms.slice(0,6) : [wState.rm];
+    const rmsForKpi = wState.rm==="Grand Total" ? gInScopeRms().slice(0,6) : [wState.rm];
     rmsForKpi.forEach((rm,i)=>{
-      const arr = (DATA.metrics[metric]||{})[rm]||[];
+      const arr = rmSeries(metric, rm);
       const val = arr[wi];
       const prevWk = wi>0? arr[wi-1] : null;
       let deltaPct = 0;
@@ -1489,17 +1584,17 @@ function initDashboard(){
     row.appendChild(frag);
     rmsForKpi.forEach((rm,i)=>{
       destroyChart('w_spark-'+i);
-      const arr = trimWindowArr((DATA.metrics[metric]||{})[rm]||[], 10).map(v=>v===null?NaN:v);
+      const arr = trimWindowArr(rmSeries(metric, rm), 10).map(v=>v===null?NaN:v);
       const el = document.getElementById('w_spark-'+i); if(!el) return;
       charts['w_spark-'+i] = new Chart(el, { type:'line', data:{ labels:arr.map((_,j)=>j), datasets:[{data:arr, borderColor:RM_COLORS[rm], borderWidth:1.8, pointRadius:0, tension:.35, fill:true, backgroundColor:RM_COLORS[rm]+'18', spanGaps:true}]},
         options:{responsive:true, maintainAspectRatio:false, animation:{duration:0}, plugins:{legend:{display:false}, tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}}} });
     });
 
     document.getElementById('w_barTitle').innerHTML = meta.label+` — Week ${week} <span class="tag">${meta.unit}</span>`;
-    const rmsToShow = wState.rm==="Grand Total" ? DATA.rms : [wState.rm];
-    document.getElementById('w_barSub').textContent = wState.rm==="Grand Total" ? `${DATA.rms.length} regions` : wState.rm;
+    const rmsToShow = wState.rm==="Grand Total" ? gInScopeRms() : [wState.rm];
+    document.getElementById('w_barSub').textContent = wState.rm==="Grand Total" ? `${rmsToShow.length} regions` : wState.rm;
     destroyChart('w_bar');
-    const barVals = rmsToShow.map(rm => ((DATA.metrics[metric]||{})[rm]||[])[wi]);
+    const barVals = rmsToShow.map(rm => rmSeries(metric, rm)[wi]);
     charts.w_bar = new Chart(document.getElementById('w_barChart'), {
       type:'bar', data:{ labels: rmsToShow, datasets:[{ label:meta.label, data: barVals, backgroundColor: rmsToShow.map(r=>RM_COLORS[r]+'cc'), borderColor: rmsToShow.map(r=>RM_COLORS[r]), borderWidth:1.5, borderRadius:6 }]},
       options:{ ...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:false},
@@ -1508,14 +1603,15 @@ function initDashboard(){
     });
 
     destroyChart('w_share');
-    const shareVals = DATA.rms.map(rm => ((DATA.metrics[metric]||{})[rm]||[])[wi] || 0);
+    const shareRms = gInScopeRms();
+    const shareVals = shareRms.map(rm => rmSeries(metric, rm)[wi] || 0);
     const shareTotal = shareVals.reduce((a,b)=>a+(b||0),0);
     charts.w_share = new Chart(document.getElementById('w_shareChart'), {
-      type:'doughnut', data:{ labels: DATA.rms, datasets:[{ data: shareVals, backgroundColor: DATA.rms.map(r=>RM_COLORS[r]), borderColor:'#ffffff', borderWidth:3, hoverOffset:8 }]},
+      type:'doughnut', data:{ labels: shareRms, datasets:[{ data: shareVals, backgroundColor: shareRms.map(r=>RM_COLORS[r]), borderColor:'#ffffff', borderWidth:3, hoverOffset:8 }]},
       options:{ responsive:true, maintainAspectRatio:false, cutout:'62%', plugins:{ legend:{position:'right', labels:{color:'#78766f', font:{size:10.5}, boxWidth:10}}, tooltip:chartDefaults.plugins.tooltip,
         datalabels:{ display:true, color:'#1c1c1e', font:{family:'JetBrains Mono', size:10.5, weight:700}, formatter:v=>fmtCompact(v, meta.unit) } },
         onHover:(evt,els)=>{ evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
-        onClick:(evt,els)=>{ if(els.length){ const rm=DATA.rms[els[0].index]; drillShare(rm, metric, shareVals[els[0].index], shareTotal); } } }
+        onClick:(evt,els)=>{ if(els.length){ const rm=shareRms[els[0].index]; drillShare(rm, metric, shareVals[els[0].index], shareTotal); } } }
     });
   }
 
@@ -1536,7 +1632,7 @@ function initDashboard(){
   buildCategorizedPills(document.getElementById('m_metricPills'), ALL_METRICS, mState.metric, m=>{ mState.metric=m; renderMonthTab(); });
 
   function monthlySeries(metric, rm){
-    const arr = (DATA.metrics[metric]||{})[rm] || [];
+    const arr = rmSeries(metric, rm);
     const meta = METRIC_META[metric];
     const byMonth = {};
     DATA.weeks.forEach((w,i)=>{
@@ -1560,7 +1656,7 @@ function initDashboard(){
     document.getElementById('m_lineTitle').innerHTML = meta.label + ` <span class="tag">${meta.unit==='%'?'monthly avg':'monthly total'}</span>`;
 
     destroyChart('m_line');
-    const rmsToShow = mState.rm==="Grand Total" ? DATA.rms : [mState.rm];
+    const rmsToShow = mState.rm==="Grand Total" ? gInScopeRms() : [mState.rm];
     const allMonths = new Set();
     const seriesByRm = {};
     rmsToShow.forEach(rm=>{ const s = monthlySeries(metric, rm); seriesByRm[rm]=s; s.months.forEach(m=>allMonths.add(m)); });
@@ -1740,6 +1836,9 @@ function initDashboard(){
       if(hState.am!=='all' && r[0]!==hState.am) return false;
       if(hState.partner!=='all' && r[4]!==hState.partner) return false;
       if(hState.search && !r[1].toLowerCase().includes(hState.search)) return false;
+      if(gFilter.rm.size && !gFilter.rm.has(r[2])) return false;
+      if(gFilter.am.size && !gFilter.am.has(r[0])) return false;
+      if(gFilter.hub.size && !gFilter.hub.has(r[1])) return false;
       return true;
     });
   }
@@ -2054,6 +2153,30 @@ function initDashboard(){
     kpiRow.appendChild(kpiFrag);
     chartGrid.appendChild(chartFrag);
 
+    // Hub type distribution donut + hub list, mirroring the Hub tab's own
+    // Explorer donut+table but scoped to just this AM's hubs.
+    document.getElementById('am_hubCountTag').textContent = hubs.length + (hubs.length===1?' hub':' hubs');
+    destroyChart('am_type');
+    const amTypeCounts = {};
+    hubs.forEach(h=>{ const t=h[3]||'Unspecified'; amTypeCounts[t]=(amTypeCounts[t]||0)+1; });
+    const amTypeLabels = Object.keys(amTypeCounts);
+    charts.am_type = new Chart(document.getElementById('am_typeChart'), {
+      type:'doughnut', data:{ labels: amTypeLabels, datasets:[{ data: amTypeLabels.map(t=>amTypeCounts[t]), backgroundColor: amTypeLabels.map((_,i)=>PALETTE[i%PALETTE.length]), borderColor:'#ffffff', borderWidth:3, hoverOffset:8 }]},
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'58%', plugins:{ legend:{position:'right', labels:{color:'#78766f', font:{size:10.5}, boxWidth:10}}, tooltip:chartDefaults.plugins.tooltip,
+        datalabels:{ display:true, color:'#1c1c1e', font:{family:'JetBrains Mono', size:10.5, weight:700}, formatter:v=>fmtCompact(v) } },
+        onHover:(evt,els)=>{ evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+        onClick:(evt,els)=>{ if(els.length) drillHubType(amTypeLabels[els[0].index], hubs); } }
+    });
+    document.getElementById('am_hubBody').innerHTML = hubs.map(h=>`<tr data-hub="${escapeHtml(h[1])}">
+      <td class="name">${escapeHtml(h[1])}</td>
+      <td style="color:${RM_COLORS[h[2]]||'inherit'}">${escapeHtml(h[2]||'—')}</td>
+      <td>${escapeHtml(h[4]||'—')}</td>
+      <td><span class="pill-type">${escapeHtml(h[3]||'—')}</span></td>
+    </tr>`).join('');
+    document.querySelectorAll('#am_hubBody tr').forEach(tr=>{
+      tr.addEventListener('click', ()=> drillHubByName(tr.dataset.hub, hubs));
+    });
+
     HUB_METRICS.forEach((metric,i)=>{
       const {meta, dense} = aggregateHubMetric(hubs, metric);
       const id = 'am_chart-'+i;
@@ -2187,9 +2310,9 @@ function initDashboard(){
     thead.innerHTML = grpRow + subRow;
 
     // rows: RM under a synthetic "All Regions" GM header, mirroring sheet's GM->RM structure.
-    const rmsToShow = sState.rm==='all' ? DATA.rms : [sState.rm];
+    const rmsToShow = sState.rm==='all' ? gInScopeRms() : [sState.rm];
     const bodyRows = rmsToShow.map(rm=>{
-      const fullArr = (DATA.metrics[metric]||{})[rm] || [];
+      const fullArr = rmSeries(metric, rm);
       const arr = weeks.map(w => fullArr[weeksAll.indexOf(w)]);
       const cells = arr.map(v=>{
         const sev = sSeverity(meta, v);
@@ -2208,7 +2331,7 @@ function initDashboard(){
     });
 
     // Grand Total row
-    const gtArrFull = (DATA.metrics[metric]||{})['Grand Total'] || [];
+    const gtArrFull = rmSeries(metric, 'Grand Total');
     const gtArr = weeks.map(w => gtArrFull[weeksAll.indexOf(w)]);
     const gtCells = gtArr.map(v=>{
       const sev = sSeverity(meta, v);
@@ -2234,7 +2357,7 @@ function initDashboard(){
       const id = 's_spark-'+rm.replace(/\s+/g,'');
       destroyChart(id);
       const el = document.getElementById(id); if(!el) return;
-      const fullArr = (DATA.metrics[metric]||{})[rm] || [];
+      const fullArr = rmSeries(metric, rm);
       const arr = weeks.map(w => { const v = fullArr[weeksAll.indexOf(w)]; return v===null||v===undefined?NaN:v; });
       charts[id] = new Chart(el, { type:'line', data:{ labels:arr.map((_,j)=>j), datasets:[{ data:arr, borderColor: RM_COLORS[rm]||'#2ee6d6', borderWidth:1.6, pointRadius:0, tension:.35, fill:true, backgroundColor:(RM_COLORS[rm]||'#2ee6d6')+'18', spanGaps:true }] },
         options:{ responsive:true, maintainAspectRatio:false, animation:{duration:0}, plugins:{legend:{display:false}, tooltip:{enabled:false}}, scales:{x:{display:false}, y:{display:false}} } });
@@ -2288,9 +2411,9 @@ function initDashboard(){
     const row = document.getElementById('f_kpiRow'); row.innerHTML='';
     const frag = document.createDocumentFragment();
     const metric = fState.metric, meta = METRIC_META[metric];
-    const rmsForKpi = fState.rm==="Grand Total" ? DATA.rms.slice(0,6) : [fState.rm];
+    const rmsForKpi = fState.rm==="Grand Total" ? gInScopeRms().slice(0,6) : [fState.rm];
     rmsForKpi.forEach((rm,i)=>{
-      const arr = fTrim((DATA.metrics[metric]||{})[rm]||[]);
+      const arr = fTrim(rmSeries(metric, rm));
       const {v:last} = lastValid(arr);
       const ytd = meta.unit==='%' ? (arr.filter(v=>typeof v==='number').reduce((a,b)=>a+b,0) / (arr.filter(v=>typeof v==='number').length||1)) : arr.reduce((a,b)=>a+(typeof b==='number'?b:0),0);
       const kpi = document.createElement('div'); kpi.className='kpi glass tilt clickable sev-neu';
@@ -2307,7 +2430,7 @@ function initDashboard(){
     rmsForKpi.forEach((rm,i)=>{
       const id = 'f_kpispark-'+i; destroyChart(id);
       const el = document.getElementById(id); if(!el) return;
-      const arr = fTrim((DATA.metrics[metric]||{})[rm]||[]).map(v=>v===null?NaN:v);
+      const arr = fTrim(rmSeries(metric, rm)).map(v=>v===null?NaN:v);
       charts[id] = new Chart(el, {type:'line', data:{labels:arr.map((_,j)=>j), datasets:[{data:arr, borderColor:RM_COLORS[rm], borderWidth:1.8, pointRadius:0, tension:.35, fill:true, backgroundColor:RM_COLORS[rm]+'18', spanGaps:true}]},
         options:{responsive:true, maintainAspectRatio:false, animation:{duration:0}, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}}}});
     });
@@ -2317,13 +2440,13 @@ function initDashboard(){
     const metric = fState.metric, meta = METRIC_META[metric];
     document.getElementById('f_trendTitle').innerHTML = meta.label + ` <span class="tag">${meta.unit}</span>`;
     const weeks = fWeeks();
-    const rmsToShow = fState.rm==="Grand Total" ? DATA.rms : [fState.rm];
+    const rmsToShow = fState.rm==="Grand Total" ? gInScopeRms() : [fState.rm];
     const datasets = rmsToShow.map(rm=>({
-      label:rm, data: fTrim((DATA.metrics[metric]||{})[rm]||[]), borderColor:RM_COLORS[rm], backgroundColor:RM_COLORS[rm]+'1c',
+      label:rm, data: fTrim(rmSeries(metric, rm)), borderColor:RM_COLORS[rm], backgroundColor:RM_COLORS[rm]+'1c',
       borderWidth: fState.rm==="Grand Total"?1.8:2.6, tension:.3, spanGaps:true, pointRadius:0, fill: fState.rm!=="Grand Total"
     }));
     if(fState.rm==="Grand Total"){
-      const gt = fTrim((DATA.metrics[metric]||{})["Grand Total"]||[]);
+      const gt = fTrim(rmSeries(metric, "Grand Total"));
       datasets.push({label:"Grand Total", data:gt, borderColor:"#1c1c1e", borderWidth:3, tension:.3, spanGaps:true, pointRadius:0, borderDash:[6,3], fill:false});
     }
     document.getElementById('f_trendSub').textContent = `Weeks ${weeks[0]}–${weeks[weeks.length-1]}`;
@@ -2336,7 +2459,7 @@ function initDashboard(){
     const metric = fState.metric, meta = METRIC_META[metric];
     // Region-filter fix: was hardcoded to DATA.rms, so this doughnut always
     // showed every region even when a single region was selected above.
-    const rmsForShare = fState.rm==="Grand Total" ? DATA.rms : [fState.rm];
+    const rmsForShare = fState.rm==="Grand Total" ? gInScopeRms() : [fState.rm];
     document.getElementById('f_doughnutSub').textContent = 'YTD ' + (meta.unit==='%'?'average':'sum') + ' by region';
     const vals = rmsForShare.map(rm => meta.unit==='%' ? (ytdAvg(metric,rm)||0) : ytdSum(metric,rm));
     const valsTotal = vals.reduce((a,b)=>a+(b||0),0);
@@ -2351,7 +2474,7 @@ function initDashboard(){
     const meta = METRIC_META[metric];
     const weeks = fWeeks();
     const rmsToShow = fState.rm==="Grand Total" ? ["Grand Total"] : [fState.rm];
-    const datasets = rmsToShow.map(rm=>({label:rm, data:fTrim((DATA.metrics[metric]||{})[rm]||[]), borderColor:meta.color, backgroundColor:meta.color+'25', borderWidth:2.4, tension:.3, spanGaps:true, pointRadius:0, fill:true}));
+    const datasets = rmsToShow.map(rm=>({label:rm, data:fTrim(rmSeries(metric, rm)), borderColor:meta.color, backgroundColor:meta.color+'25', borderWidth:2.4, tension:.3, spanGaps:true, pointRadius:0, fill:true}));
     charts[canvasId] = new Chart(document.getElementById(canvasId), {type:'line', data:{labels:weeks.map(w=>'W'+w), datasets},
       options:{...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:false}},
         onClick:()=> drillRmMetric(fState.rm, metric) }});
@@ -2359,14 +2482,14 @@ function initDashboard(){
   let fSortKey='spf', fSortDir=-1;
   function renderFullLeaderboard(){
     // Region-filter fix: was hardcoded to DATA.rms, ignoring the Region filter.
-    const rmsForBoard = fState.rm==="Grand Total" ? DATA.rms : [fState.rm];
+    const rmsForBoard = fState.rm==="Grand Total" ? gInScopeRms() : [fState.rm];
     const rows = rmsForBoard.map(rm=>{
-      const prc = lastValid((DATA.metrics["PRC Non*adherance"]||{})[rm]||[]).v;
+      const prc = lastValid(rmSeries("PRC Non*adherance", rm)).v;
       const untrace = ytdSum("Untraceable (DH+ODH+MDH) * Count >1 Day", rm);
       const spf = ytdSum("LM SPF loss * Overall", rm);
       const fraud = ytdSum("Overall Fraud Loss (MPFBF)", rm);
       const pendency = ytdSum("Overall Pendency(FA+NFA) *  (>2 Days) (DH+ODH+MDH)*Count", rm);
-      const trendArr = fTrim((DATA.metrics["LM SPF loss * Overall"]||{})[rm]||[]).filter(v=>typeof v==='number');
+      const trendArr = fTrim(rmSeries("LM SPF loss * Overall", rm)).filter(v=>typeof v==='number');
       return {rm, prc, untrace, spf, fraud, pendency, trendArr};
     });
     const keyMap = {name:'rm', prc:'prc', untrace:'untrace', spf:'spf', fraud:'fraud', pendency:'pendency'};
