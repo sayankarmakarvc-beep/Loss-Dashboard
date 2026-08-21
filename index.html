@@ -554,8 +554,12 @@ body.modal-lock{overflow:hidden;}
     </div>
     <div class="card glass tilt">
       <div class="card-hdr">
-        <div class="card-title">Regional Heatmap <span class="tag">core metrics × RM</span></div>
+        <div class="card-title">Heatmap <span class="tag" id="c_heatTag">core metrics × RM</span></div>
         <div class="card-sub">Color = severity vs target · click a cell to drill in</div>
+        <div class="pillgroup" id="c_heatModeToggle">
+          <div class="pill active" data-mode="rm">RM</div>
+          <div class="pill" data-mode="am">AM</div>
+        </div>
       </div>
       <div class="heatwrap"><table class="heattable" id="c_heatTable"><thead></thead><tbody></tbody></table></div>
     </div>
@@ -869,7 +873,7 @@ body.modal-lock{overflow:hidden;}
 </div>
 
 <script>
-let PAYLOAD, DATA, HUB, WEEK_MONTH, MONTH_NAMES;
+let PAYLOAD, DATA, AM, HUB, WEEK_MONTH, MONTH_NAMES;
 
 /* Every metric group Apps Script finds in the sheet's row-1 headers ends up
    as a key in DATA.metrics (RM-level) automatically — detectMetricGroups()
@@ -916,26 +920,12 @@ const CAT_ORDER = ["loss","pendency","risk","adherence"];
 // Full metric universe (Week/Month/Full/Sheet/Command Center draw from this).
 const ALL_METRICS = Object.keys(METRIC_META);
 
-// Hub-level payload only carries these 12 (see Code.gs PRIMARY_METRICS / HUB_METRIC_KEYS —
-// the two lists must stay in the same order). Everything else is RM-level only.
-const PRIMARY_METRICS = [
-  "LM SPF loss * Overall",
-  "Overall Fraud Loss (MPFBF)",
-  "Untraceable (DH+ODH+MDH) * Count >1 Day",
-  "PRC Non*adherance",
-  "RTO/RVP Pendency (>2 Day) (DH+ODH+MDH) * count",
-  "Overall Pendency(FA+NFA) *  (>2 Days) (DH+ODH+MDH)*Count",
-  "Overall Retrun Pendency",
-  "CV Adherence",
-  "LM OBD Image Adherence",
-  "Pickup accuracy",
-  "Flyer ID Relatching",
-  "RTO CV Image Adherence (CV Accuracy)"
-];
-const HUB_METRICS = PRIMARY_METRICS; // alias kept for readability at hub call sites
-const HUB_METRIC_KEYS = ["spf","fraud","untrace","prc","rtopend","ovpend","retpend","cvadh","obdadh","pickacc","flyer","rtocv"];
-const HUB_KEY_FOR_METRIC = {};
-PRIMARY_METRICS.forEach((m,i)=> HUB_KEY_FOR_METRIC[m] = HUB_METRIC_KEYS[i]);
+// Hub-level payload now carries all 26 metrics (payload.hub.keys lists them,
+// in sheet-column order, right after the 5 identity columns am/hub/rm/type/
+// partner). hubColIdx() looks a metric up by name instead of a fixed
+// abbreviation table.
+function hubColIdx(metric){ return HUB.keys.indexOf(metric); }
+const HUB_METRICS = ALL_METRICS; // alias kept for readability at hub call sites
 
 // Compact spotlight set for the Command Center regional heatmap — one or two
 // representative metrics per category keeps the grid readable at a glance.
@@ -1025,6 +1015,14 @@ function ytdAvg(metric, rm){
   if(!arr.length) return null;
   return arr.reduce((a,b)=>a+b,0)/arr.length;
 }
+function amYtdSum(metric, am){
+  return amSeries(metric, am).reduce((a,b)=> a + (typeof b==='number'? b:0), 0);
+}
+function amYtdAvg(metric, am){
+  const arr = amSeries(metric, am).filter(v=>typeof v==='number');
+  if(!arr.length) return null;
+  return arr.reduce((a,b)=>a+b,0)/arr.length;
+}
 function trimWindowArr(arr, n){
   if(arr.length <= n) return arr;
   return arr.slice(arr.length - n);
@@ -1060,6 +1058,22 @@ function gInScopeRms(){
     return true;
   });
 }
+// AM equivalent of gInScopeRms() — falls back to the hub-derived AM list
+// (no RM narrowing) if payload.am isn't present yet on an older data.json.
+function gInScopeAms(){
+  const allAms = (AM && AM.ams) ? AM.ams : [...new Set(HUB.rows.map(h=>h[0]).filter(Boolean))];
+  if(!gActive()) return allAms;
+  return allAms.filter(am=>{
+    if(gFilter.am.size && !gFilter.am.has(am)) return false;
+    const rm = AM && AM.amToRm ? AM.amToRm[am] : null;
+    if(gFilter.rm.size && rm && !gFilter.rm.has(rm)) return false;
+    if(gFilter.hub.size){
+      const ok = HUB.rows.some(h=> h[0]===am && gFilter.hub.has(h[1]));
+      if(!ok) return false;
+    }
+    return true;
+  });
+}
 // Resolves a metric's weekly series for `rm`, honoring the global filter:
 // re-aggregates "Grand Total" across gInScopeRms() when a filter is active,
 // and returns an empty series for any specific RM the filter has excluded.
@@ -1075,6 +1089,13 @@ function rmSeries(metric, rm){
   }
   if(gActive() && rm!=='Grand Total' && !gInScopeRms().includes(rm)) return [];
   return (DATA.metrics[metric]||{})[rm] || [];
+}
+// Resolves a metric's weekly series for a single AM from the AM-level table
+// (payload.am — precomputed by the sheet itself, same shape as DATA.metrics
+// but keyed by AM name). No Grand Total re-aggregation here: an AM view is
+// always about one AM.
+function amSeries(metric, am){
+  return (AM && AM.metrics[metric] || {})[am] || [];
 }
 // true when a WoW/MoM % move is a bad move for this metric (accounts for
 // "invert" metrics like adherence %, where going DOWN is bad).
@@ -1100,13 +1121,16 @@ function isoWeekNum(d){
 // Cap payload to weeks up to and including the current ISO week (no future weeks shown)
 function capToCurrentWeek(payload){
   const currentWeek = isoWeekNum(new Date());
-  const data = payload.rm;
-  const keepIdx = data.weeks.reduce((arr,w,i)=>{ if(w<=currentWeek) arr.push(i); return arr; }, []);
-  if(keepIdx.length === data.weeks.length) return; // nothing to trim
-  data.weeks = keepIdx.map(i=>data.weeks[i]);
-  Object.keys(data.metrics).forEach(metric=>{
-    Object.keys(data.metrics[metric]).forEach(rm=>{
-      data.metrics[metric][rm] = keepIdx.map(i=>data.metrics[metric][rm][i]);
+  // rm and am are both {weeks, metrics:{metric:{name:series}}} — trim identically.
+  [payload.rm, payload.am].forEach(data=>{
+    if(!data) return;
+    const keepIdx = data.weeks.reduce((arr,w,i)=>{ if(w<=currentWeek) arr.push(i); return arr; }, []);
+    if(keepIdx.length === data.weeks.length) return; // nothing to trim
+    data.weeks = keepIdx.map(i=>data.weeks[i]);
+    Object.keys(data.metrics).forEach(metric=>{
+      Object.keys(data.metrics[metric]).forEach(name=>{
+        data.metrics[metric][name] = keepIdx.map(i=>data.metrics[metric][name][i]);
+      });
     });
   });
   if(payload.hub && payload.hub.rows){
@@ -1255,10 +1279,10 @@ function drillHub(hub){
 
 // Look up a hub by name from a hub-tab row list (built by renderHubTable) and drill into it.
 function drillHubByName(hubName, hubRawRows){
-  const prcIdx = 5+HUB_METRIC_KEYS.indexOf('prc');
-  const untraceIdx = 5+HUB_METRIC_KEYS.indexOf('untrace');
-  const spfIdx = 5+HUB_METRIC_KEYS.indexOf('spf');
-  const fraudIdx = 5+HUB_METRIC_KEYS.indexOf('fraud');
+  const prcIdx = hubColIdx('PRC Non*adherance');
+  const untraceIdx = hubColIdx('Untraceable (DH+ODH+MDH) * Count >1 Day');
+  const spfIdx = hubColIdx('LM SPF loss * Overall');
+  const fraudIdx = hubColIdx('Overall Fraud Loss (MPFBF)');
   const h = hubRawRows.find(row=>row[1]===hubName);
   if(!h) return;
   drillHub({
@@ -1271,10 +1295,10 @@ function drillHubByName(hubName, hubRawRows){
 // Drill into any hub grouping slice (Hub Type, AM, RM, or Partner): aggregate
 // stats across every hub sharing that dimension value. dimIdx: 0=am,2=rm,3=type,4=partner.
 function drillGroup(dimLabel, dimIdx, key, hubRawRows){
-  const prcIdx = 5+HUB_METRIC_KEYS.indexOf('prc');
-  const untraceIdx = 5+HUB_METRIC_KEYS.indexOf('untrace');
-  const spfIdx = 5+HUB_METRIC_KEYS.indexOf('spf');
-  const fraudIdx = 5+HUB_METRIC_KEYS.indexOf('fraud');
+  const prcIdx = hubColIdx('PRC Non*adherance');
+  const untraceIdx = hubColIdx('Untraceable (DH+ODH+MDH) * Count >1 Day');
+  const spfIdx = hubColIdx('LM SPF loss * Overall');
+  const fraudIdx = hubColIdx('Overall Fraud Loss (MPFBF)');
   const rows = hubRawRows.filter(h=>(h[dimIdx]||'Unspecified')===key);
   let prcSum=0, prcN=0, untrace=0, spf=0, fraud=0;
   rows.forEach(h=>{
@@ -1356,17 +1380,21 @@ function initDashboard(){
   populateSidebarInfo();
   const latestWeek = DATA.weeks[DATA.weeks.length-1];
 
-  // AM ↔ RM association, derived once from hub rows since no dedicated
-  // mapping table exists in the payload — used to narrow the Region
-  // dropdown when an AM filter is applied on Week/Month/Sheet/Full, and to
-  // power the AM View tab's search list.
+  // AM ↔ RM association. Authoritative source is AM.amToRm (the sheet's own
+  // "Current RM | Current AM" table, via pull_data.py's extract_am_table) —
+  // falls back to deriving it from hub rows only if an older data.json
+  // (pulled before this table existed) is still being served.
   const AM_RM_MAP = {};
-  HUB.rows.forEach(r=>{
-    const am = r[0], rm = r[2];
-    if(!am) return;
-    if(!AM_RM_MAP[am]) AM_RM_MAP[am] = new Set();
-    if(rm) AM_RM_MAP[am].add(rm);
-  });
+  if(AM && AM.amToRm){
+    Object.keys(AM.amToRm).forEach(am=>{ AM_RM_MAP[am] = new Set([AM.amToRm[am]]); });
+  } else {
+    HUB.rows.forEach(r=>{
+      const am = r[0], rm = r[2];
+      if(!am) return;
+      if(!AM_RM_MAP[am]) AM_RM_MAP[am] = new Set();
+      if(rm) AM_RM_MAP[am].add(rm);
+    });
+  }
   const ALL_AMS = Object.keys(AM_RM_MAP).sort();
 
   // Narrows a Region(RM) <select> to the RMs associated with `am` (plus the
@@ -1531,40 +1559,61 @@ function initDashboard(){
     return '';
   }
 
+  let cHeatMode = 'rm';
+  document.querySelectorAll('#c_heatModeToggle .pill').forEach(p=>{
+    p.addEventListener('click', ()=>{
+      document.querySelectorAll('#c_heatModeToggle .pill').forEach(x=>x.classList.remove('active'));
+      p.classList.add('active');
+      cHeatMode = p.dataset.mode;
+      renderCommandCenterHeatmap();
+    });
+  });
+
+  // Renders the heatmap for either grain: `names` is the row list, `sumFn`/
+  // `avgFn` resolve a metric's YTD sum/average for one name, `rowLabel`
+  // builds that row's leftmost cell(s). RM and AM modes share every bit of
+  // the ranking/severity/click logic below via these three hooks.
   function renderCommandCenterHeatmap(){
+    const am = cHeatMode==='am';
+    const names = am ? gInScopeAms() : gInScopeRms();
+    const sumFn = am ? amYtdSum : ytdSum;
+    const avgFn = am ? amYtdAvg : ytdAvg;
+    document.getElementById('c_heatTag').textContent = 'core metrics × ' + (am?'AM':'RM');
+
     const thead = document.getElementById('c_heatTable').querySelector('thead');
-    thead.innerHTML = '<tr><th class="rmcol">Region</th>' + HEATMAP_METRICS.map(m=>`<th title="${METRIC_META[m].label}">${METRIC_META[m].label.length>16?METRIC_META[m].label.slice(0,14)+'…':METRIC_META[m].label}</th>`).join('') + '</tr>';
-    // For count/₹L metrics (not %), rank each RM's value among all RMs for that
-    // column so the heatmap still shows relative severity per-metric.
+    thead.innerHTML = `<tr><th class="rmcol">${am?'AM':'Regional Manager'}</th>` + HEATMAP_METRICS.map(m=>`<th title="${METRIC_META[m].label}">${METRIC_META[m].label.length>16?METRIC_META[m].label.slice(0,14)+'…':METRIC_META[m].label}</th>`).join('') + '</tr>';
+    // For count/₹L metrics (not %), rank each row's value among all rows for
+    // that column so the heatmap still shows relative severity per-metric.
     const ranks = {};
     HEATMAP_METRICS.forEach(m=>{
       const meta = METRIC_META[m];
       if(meta.unit==='%') return;
-      const vals = gInScopeRms().map(rm=> ({rm, v: ytdSum(m, rm)}));
+      const vals = names.map(n=> ({n, v: sumFn(m, n)}));
       const sorted = [...vals].sort((a,b)=>b.v-a.v); // highest = worst for non-invert loss/pendency/risk metrics
       const rankMap = {};
-      sorted.forEach((x,i)=>{ rankMap[x.rm] = i / Math.max(1, sorted.length-1); }); // 0 = worst, 1 = best
+      sorted.forEach((x,i)=>{ rankMap[x.n] = i / Math.max(1, sorted.length-1); }); // 0 = worst, 1 = best
       ranks[m] = rankMap;
     });
     const tbody = document.getElementById('c_heatTable').querySelector('tbody');
-    tbody.innerHTML = gInScopeRms().map(rm=>{
+    tbody.innerHTML = names.map(n=>{
       const cells = HEATMAP_METRICS.map(m=>{
         const meta = METRIC_META[m];
         let cls, val;
         if(meta.unit==='%'){
-          val = ytdAvg(m, rm);
+          val = avgFn(m, n);
           cls = heatSeverity(meta, val);
         } else {
-          val = ytdSum(m, rm);
-          const r = ranks[m][rm];
+          val = sumFn(m, n);
+          const r = ranks[m][n];
           cls = r>=0.66?'heat-good':(r>=0.33?'heat-warn':'heat-bad');
         }
-        return `<td class="${cls}" data-rm="${rm}" data-metric="${m}">${fmtCompact(val, meta.unit)||'—'}</td>`;
+        return `<td class="${cls}" data-n="${escapeHtml(n)}" data-metric="${m}">${fmtCompact(val, meta.unit)||'—'}</td>`;
       }).join('');
-      return `<tr><td class="rmname">${rm}</td>${cells}</tr>`;
+      const rowLabel = am ? `${escapeHtml(n)} <span style="opacity:.55;font-weight:600;">— ${escapeHtml((AM&&AM.amToRm&&AM.amToRm[n])||'—')}</span>` : escapeHtml(n);
+      return `<tr><td class="rmname">${rowLabel}</td>${cells}</tr>`;
     }).join('');
     tbody.querySelectorAll('td[data-metric]').forEach(td=>{
-      td.addEventListener('click', ()=> drillRmMetric(td.dataset.rm, td.dataset.metric));
+      td.addEventListener('click', ()=> am ? drillAmMetric(td.dataset.n, td.dataset.metric) : drillRmMetric(td.dataset.n, td.dataset.metric));
     });
   }
 
@@ -1793,8 +1842,7 @@ function initDashboard(){
   }
 
   /* ======================================================================
-     HUB VIEW — hub-level explorer (827 hubs, 12 metrics carried per hub —
-     see Code.gs PRIMARY_METRICS for exactly which)
+     HUB VIEW — hub-level explorer (827 hubs, all 26 metrics carried per hub)
      ====================================================================== */
   let hState = { rm:'all', type:'all', am:'all', partner:'all', search:'', metric:'LM SPF loss * Overall', sortKey:'spf', sortDir:-1, groupBy:'hub' };
 
@@ -1873,17 +1921,16 @@ function initDashboard(){
     return dense;
   }
 
-  // Aggregates one of the 12 primary hub metrics across an arbitrary list of
-  // hub rows (one row for Hub Lookup, many for AM View) into a per-week
-  // dense series plus latest/YTD summary values — sum per week for
-  // count/₹L metrics, average per week for % metrics. Built on the same
-  // hubSparseSum/hubSparseLast/hubSparseToDense primitives so a single row
-  // produces byte-identical numbers to what Hub Lookup showed before this
-  // was factored out; shared here so AM View can't drift from it.
+  // Aggregates any hub-level metric across an arbitrary list of hub rows
+  // (one row for Hub Lookup, many for AM View) into a per-week dense series
+  // plus latest/YTD summary values — sum per week for count/₹L metrics,
+  // average per week for % metrics. Built on the same hubSparseSum/
+  // hubSparseLast/hubSparseToDense primitives so a single row produces
+  // byte-identical numbers to what Hub Lookup showed before this was
+  // factored out; shared here so AM View can't drift from it.
   function aggregateHubMetric(hubRows, metric){
     const meta = METRIC_META[metric];
-    const key = HUB_KEY_FOR_METRIC[metric];
-    const idx = 5 + HUB_METRIC_KEYS.indexOf(key);
+    const idx = hubColIdx(metric);
     const isPct = meta.unit==='%';
     const sums = new Array(HUB.weeks).fill(0);
     const counts = new Array(HUB.weeks).fill(0);
@@ -1914,8 +1961,7 @@ function initDashboard(){
 
   function renderHubTab(){
     const metric = hState.metric, meta = METRIC_META[metric];
-    const key = HUB_KEY_FOR_METRIC[metric];
-    const keyIdx = 5 + HUB_METRIC_KEYS.indexOf(key);
+    const keyIdx = hubColIdx(metric);
     const hubs = filteredHubs();
     const dimLabel = GROUP_DIM_LABEL[hState.groupBy];
 
@@ -1931,8 +1977,7 @@ function initDashboard(){
     const row = document.getElementById('h_kpiRow'); row.innerHTML='';
     const frag = document.createDocumentFragment();
     HUB_METRICS.slice(0,6).forEach((m,i)=>{
-      const mkey = HUB_KEY_FOR_METRIC[m];
-      const mIdx = 5+HUB_METRIC_KEYS.indexOf(mkey);
+      const mIdx = hubColIdx(m);
       const mmeta = METRIC_META[m];
       let total = 0, count=0;
       hubs.forEach(h=>{
@@ -2002,10 +2047,10 @@ function initDashboard(){
   // hub mode: one row per hub (unchanged from the original Hub Explorer).
   // am/rm/partner mode: hubs are rolled up into one row per group value.
   function renderHubTable(hubs){
-    const prcIdx = 5+HUB_METRIC_KEYS.indexOf('prc');
-    const untraceIdx = 5+HUB_METRIC_KEYS.indexOf('untrace');
-    const spfIdx = 5+HUB_METRIC_KEYS.indexOf('spf');
-    const fraudIdx = 5+HUB_METRIC_KEYS.indexOf('fraud');
+    const prcIdx = hubColIdx('PRC Non*adherance');
+    const untraceIdx = hubColIdx('Untraceable (DH+ODH+MDH) * Count >1 Day');
+    const spfIdx = hubColIdx('LM SPF loss * Overall');
+    const fraudIdx = hubColIdx('Overall Fraud Loss (MPFBF)');
 
     const thead = document.getElementById('h_thead');
     let rows;
@@ -2098,8 +2143,8 @@ function initDashboard(){
 
   /* ======================================================================
      HUB LOOKUP — search a single hub by name, see its full profile:
-     AM/RM/Partner/Type header + a KPI tile and weekly chart per primary
-     metric (same 12 metrics HUB.rows carries, see pull_data.py PRIMARY_METRICS).
+     AM/RM/Partner/Type header + a KPI tile and weekly chart per metric
+     (all 26 metrics HUB.rows carries).
      ====================================================================== */
   const hlHubList = document.getElementById('hl_hubList');
   hlHubList.innerHTML = HUB.rows.map(h=>`<option value="${escapeHtml(h[1])}">`).join('');
@@ -2163,8 +2208,8 @@ function initDashboard(){
 
   /* ======================================================================
      AM VIEW — search a single AM, see everything they touch: all hubs
-     across every RM/Partner they span, aggregated across the same 12
-     primary metrics as Hub Lookup (via the shared aggregateHubMetric()
+     across every RM/Partner they span, aggregated across all 26 metrics
+     the same way Hub Lookup does (via the shared aggregateHubMetric()
      above so the two tabs can't drift apart).
      ====================================================================== */
   const amAmList = document.getElementById('am_amList');
@@ -2260,9 +2305,8 @@ function initDashboard(){
   }
 
   /* ======================================================================
-     RM VIEW — pick one Region and see a full dashboard built on the rich
-     26-metric DATA.rm.metrics (unlike Hub/AM View, which only carry the 12
-     hub-level PRIMARY_METRICS). Reuses weekDelta()/isBadDelta() from the
+     RM VIEW — pick one Regional Manager and see a full dashboard built on
+     the rich 26-metric DATA.rm.metrics. Reuses weekDelta()/isBadDelta() from the
      Command Center section above and the same .mtile grid markup, so this
      is effectively "Command Center scoped to one RM" rather than new logic.
      ====================================================================== */
@@ -2647,7 +2691,7 @@ function loadData(){
       }
       PAYLOAD = json;
       capToCurrentWeek(PAYLOAD);
-      DATA = PAYLOAD.rm; HUB = PAYLOAD.hub; WEEK_MONTH = PAYLOAD.weekMonth; MONTH_NAMES = PAYLOAD.monthNames;
+      DATA = PAYLOAD.rm; AM = PAYLOAD.am; HUB = PAYLOAD.hub; WEEK_MONTH = PAYLOAD.weekMonth; MONTH_NAMES = PAYLOAD.monthNames;
       const ts = PAYLOAD.generatedAt ? new Date(PAYLOAD.generatedAt).toLocaleString('en-IN') : new Date().toLocaleString('en-IN');
       setDataSourceBadge('live', 'Refreshed from the sheet at ' + ts);
       const subEl = document.getElementById('hdrSub');
