@@ -70,7 +70,7 @@ body{
   background:linear-gradient(120deg, rgba(255,255,255,.5) 0%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 70%, rgba(255,255,255,.25) 100%);
   mix-blend-mode:overlay;
 }
-.tilt{transition:transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s cubic-bezier(.22,1,.36,1);transform-style:preserve-3d;}
+.tilt{transition:transform .35s cubic-bezier(0.16,1,0.3,1), box-shadow .35s cubic-bezier(0.16,1,0.3,1);transform-style:preserve-3d;will-change:transform;}
 .tilt:hover{transform:translateY(-5px) scale(1.008) rotateX(1.6deg);box-shadow:0 22px 52px rgba(30,30,40,.16), inset 0 1px 0 rgba(255,255,255,.9);}
 .tilt:active{transform:translateY(-2px) scale(1.002) rotateX(.6deg);}
 @media (prefers-reduced-motion: reduce){ .tilt:hover{transform:none;} }
@@ -141,7 +141,7 @@ h1{margin:0;font-size:27px;font-weight:900;letter-spacing:-.02em;
   display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;font-weight:700;
   background:linear-gradient(135deg, var(--blue), var(--teal));color:#ffffff;border:none;border-radius:10px;
   padding:11px 16px;cursor:pointer;letter-spacing:.03em;text-transform:uppercase;
-  box-shadow:0 4px 16px rgba(10,132,255,.25);transition:transform .15s, box-shadow .15s;
+  box-shadow:0 4px 16px rgba(10,132,255,.25);transition:transform .3s cubic-bezier(0.16,1,0.3,1), box-shadow .3s cubic-bezier(0.16,1,0.3,1);
 }
 .refresh-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(10,132,255,.4);}
 .refresh-btn:active{transform:translateY(0);}
@@ -158,7 +158,7 @@ h1{margin:0;font-size:27px;font-weight:900;letter-spacing:-.02em;
 .sidebar-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--ink-dim);text-transform:uppercase;padding:8px 10px 6px;}
 .tabbtn{
   text-align:left;padding:12px 14px;border-radius:10px;border:none;background:transparent;color:var(--ink-dim);
-  font-family:var(--sans);font-size:13.5px;font-weight:700;cursor:pointer;transition:.18s;white-space:nowrap;
+  font-family:var(--sans);font-size:13.5px;font-weight:700;cursor:pointer;transition:.25s cubic-bezier(0.16,1,0.3,1);white-space:nowrap;
   display:flex;align-items:center;gap:10px;letter-spacing:.01em;width:100%;position:relative;
 }
 .tabbtn svg{width:16px;height:16px;flex-shrink:0;transition:transform .18s;}
@@ -200,7 +200,7 @@ select:hover, input[type=text]:hover{border-color:var(--blue);}
 .pillgroup{display:flex;gap:7px;margin-left:auto;flex-wrap:wrap;}
 .pill{
   font-family:var(--mono);font-size:11px;padding:7px 13px;border-radius:20px;border:1px solid rgba(0,0,0,.08);
-  background:rgba(255,255,255,.5);color:var(--ink-dim);cursor:pointer;transition:.15s;font-weight:600;
+  background:rgba(255,255,255,.5);color:var(--ink-dim);cursor:pointer;transition:.25s cubic-bezier(0.16,1,0.3,1);font-weight:600;
 }
 .pill:hover{border-color:var(--blue);color:var(--ink);background:rgba(10,132,255,.08);transform:translateY(-1px);}
 .pill:active{transform:translateY(0);}
@@ -225,7 +225,8 @@ select:hover, input[type=text]:hover{border-color:var(--blue);}
   border-radius:16px;
   padding:16px 16px 14px;position:relative;overflow:hidden;
   height:128px;display:flex;flex-direction:column;
-  transition:box-shadow .2s ease, transform .2s ease;
+  transition:box-shadow .3s cubic-bezier(0.16,1,0.3,1), transform .3s cubic-bezier(0.16,1,0.3,1);
+  contain:content;
 }
 .kpi.clickable{cursor:pointer;}
 .kpi:hover{box-shadow:0 12px 28px rgba(30,30,40,.14), inset 0 1px 0 rgba(255,255,255,.9);}
@@ -250,7 +251,8 @@ select:hover, input[type=text]:hover{border-color:var(--blue);}
 /* compact metric tile (Command Center grid) */
 .mtile{
   border-radius:14px;padding:13px 14px 11px;position:relative;overflow:hidden;cursor:pointer;
-  transition:box-shadow .2s ease, transform .2s ease;height:112px;display:flex;flex-direction:column;
+  transition:box-shadow .3s cubic-bezier(0.16,1,0.3,1), transform .3s cubic-bezier(0.16,1,0.3,1);height:112px;display:flex;flex-direction:column;
+  contain:content;
 }
 .mtile:hover{box-shadow:0 12px 26px rgba(30,30,40,.14);}
 .mtile::after{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;}
@@ -274,6 +276,7 @@ select:hover, input[type=text]:hover{border-color:var(--blue);}
 .card{
   border-radius:18px;padding:20px 22px;
   margin-bottom:16px;
+  contain:content;
 }
 .card-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
 .card-title{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px;}
@@ -306,7 +309,7 @@ tr:hover td{background:rgba(10,132,255,.05);}
 .badge.warn{background:rgba(255,159,10,.15);color:var(--amber);}
 .badge.ok{background:rgba(52,199,89,.13);color:var(--green);}
 .bar-cell{position:relative;width:90px;height:16px;background:var(--panel-2);border-radius:5px;overflow:hidden;display:inline-block;vertical-align:middle;}
-.bar-fill{position:absolute;left:0;top:0;bottom:0;border-radius:5px;transition:width .6s ease;}
+.bar-fill{position:absolute;left:0;top:0;bottom:0;width:100%;border-radius:5px;transform-origin:left;transition:transform .6s cubic-bezier(0.16,1,0.3,1);will-change:transform;}
 .spark-td{position:relative;width:90px;height:24px;}
 .spark-td canvas{position:absolute;inset:0;}
 .pill-type{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--panel-2);color:var(--violet);border:1px solid var(--line);}
@@ -327,7 +330,7 @@ tr:hover td{background:rgba(10,132,255,.05);}
 
 /* ---------- MOVERS ---------- */
 .movers-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-.mover-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;transition:.15s;margin-bottom:6px;background:rgba(255,255,255,.4);}
+.mover-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;transition:.25s cubic-bezier(0.16,1,0.3,1);margin-bottom:6px;background:rgba(255,255,255,.4);}
 .mover-row:hover{background:rgba(10,132,255,.08);transform:translateX(2px);}
 .mover-name{font-size:12px;font-weight:700;}
 .mover-sub{font-size:10px;color:var(--ink-dim);font-family:var(--mono);}
@@ -382,7 +385,7 @@ tr:hover td{background:rgba(10,132,255,.05);}
 .modal-backdrop{
   position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:24px;
   background:rgba(30,30,32,.28);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
-  opacity:0;pointer-events:none;transition:opacity .3s cubic-bezier(.22,1,.36,1);
+  opacity:0;pointer-events:none;transition:opacity .3s cubic-bezier(0.16,1,0.3,1);
 }
 .modal-backdrop.open{opacity:1;pointer-events:auto;}
 .modal-sheet{
@@ -391,8 +394,8 @@ tr:hover td{background:rgba(10,132,255,.05);}
   backdrop-filter:blur(30px) saturate(190%);-webkit-backdrop-filter:blur(30px) saturate(190%);
   border:1px solid rgba(255,255,255,.7);
   box-shadow:0 30px 80px rgba(20,20,30,.28), inset 0 1px 0 rgba(255,255,255,.9);
-  transform:scale(.92) translateY(16px);opacity:0;transition:transform .38s cubic-bezier(.22,1,.36,1), opacity .3s ease;
-  padding:26px 28px 30px;
+  transform:scale(.92) translateY(16px);opacity:0;transition:transform .38s cubic-bezier(0.16,1,0.3,1), opacity .3s ease;
+  padding:26px 28px 30px;will-change:transform, opacity;
 }
 .modal-backdrop.open .modal-sheet{transform:scale(1) translateY(0);opacity:1;}
 .modal-hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:6px;}
@@ -1304,6 +1307,7 @@ function initDashboard(){
 
   function renderCommandCenterHero(){
     const row = document.getElementById('c_heroRow'); row.innerHTML='';
+    const frag = document.createDocumentFragment();
     const heroSpecs = [
       {label:'SPF + Fraud Loss (YTD)', metrics:['LM SPF loss * Overall','Overall Fraud Loss (MPFBF)'], unit:'₹L', agg:'sum'},
       {label:'Overall Pendency (YTD)', metrics:['Overall Pendency(FA+NFA) *  (>2 Days) (DH+ODH+MDH)*Count'], unit:'count', agg:'sum'},
@@ -1321,14 +1325,16 @@ function initDashboard(){
       kpi.innerHTML = `<div class="kpi-label">${spec.label}</div><div class="kpi-value">${fmtVal(val, spec.unit)}</div>
         <div class="kpi-delta flat">FY2026 · through W${latestWeek}</div><div class="kpi-spark-wrap"></div>`;
       if(spec.metrics && spec.metrics.length===1){ kpi.classList.add('clickable'); kpi.addEventListener('click', ()=> drillRmMetric('Grand Total', spec.metrics[0])); }
-      row.appendChild(kpi);
+      frag.appendChild(kpi);
     });
+    row.appendChild(frag);
   }
 
   function renderCommandCenterGrid(){
     const wanted = cState.cat==='all' ? ALL_METRICS : ALL_METRICS.filter(m=>METRIC_META[m].cat===cState.cat);
     document.getElementById('c_gridTag').textContent = wanted.length + ' metric' + (wanted.length===1?'':'s');
     const grid = document.getElementById('c_metricGrid'); grid.innerHTML='';
+    const frag = document.createDocumentFragment();
     wanted.forEach((m,i)=>{
       const meta = METRIC_META[m];
       const {last, deltaPct} = weekDelta(m, 'Grand Total');
@@ -1341,8 +1347,9 @@ function initDashboard(){
         <div class="mtile-delta ${deltaClass}">${arrow} ${Math.abs(deltaPct).toFixed(1)}% WoW</div>
         <div class="mtile-spark"><canvas id="c_tile-${i}"></canvas></div>`;
       tile.addEventListener('click', ()=> drillRmMetric('Grand Total', m));
-      grid.appendChild(tile);
+      frag.appendChild(tile);
     });
+    grid.appendChild(frag);
     wanted.forEach((m,i)=>{
       const id='c_tile-'+i; destroyChart(id);
       const el = document.getElementById(id); if(!el) return;
@@ -1456,6 +1463,7 @@ function initDashboard(){
     // KPI row: respects the Region filter — one RM if selected, else top 6
     const row = document.getElementById('w_kpiRow');
     row.innerHTML = '';
+    const frag = document.createDocumentFragment();
     const rmsForKpi = wState.rm==="Grand Total" ? DATA.rms.slice(0,6) : [wState.rm];
     rmsForKpi.forEach((rm,i)=>{
       const arr = (DATA.metrics[metric]||{})[rm]||[];
@@ -1473,11 +1481,12 @@ function initDashboard(){
         <div class="kpi-delta ${deltaClass}">${arrow} ${Math.abs(deltaPct).toFixed(1)}% vs prior wk</div>
         <div class="kpi-spark-wrap"><canvas id="w_spark-${i}"></canvas></div>`;
       kpi.addEventListener('click', ()=> drillRmMetric(rm, metric));
-      row.appendChild(kpi);
+      frag.appendChild(kpi);
       const cacheKey = 'w_kpi_'+rm;
       animateNumber(kpi.querySelector('.kpi-value'), kpiValCache[cacheKey], val, v=>fmtVal(v, meta.unit));
       kpiValCache[cacheKey] = val;
     });
+    row.appendChild(frag);
     rmsForKpi.forEach((rm,i)=>{
       destroyChart('w_spark-'+i);
       const arr = trimWindowArr((DATA.metrics[metric]||{})[rm]||[], 10).map(v=>v===null?NaN:v);
@@ -1752,6 +1761,7 @@ function initDashboard(){
 
     // KPI row: aggregate across filtered hubs for top metrics
     const row = document.getElementById('h_kpiRow'); row.innerHTML='';
+    const frag = document.createDocumentFragment();
     HUB_METRICS.slice(0,6).forEach((m,i)=>{
       const mkey = HUB_KEY_FOR_METRIC[m];
       const mIdx = 5+HUB_METRIC_KEYS.indexOf(mkey);
@@ -1765,8 +1775,9 @@ function initDashboard(){
       const kpi = document.createElement('div'); kpi.className='kpi glass tilt sev-neu';
       kpi.innerHTML = `<div class="kpi-label">${mmeta.label}</div><div class="kpi-value">${fmtVal(val, mmeta.unit)}</div>
         <div class="kpi-delta flat">across ${hubs.length} hubs</div><div class="kpi-spark-wrap"></div>`;
-      row.appendChild(kpi);
+      frag.appendChild(kpi);
     });
+    row.appendChild(frag);
 
     // Top 12 by YTD for selected metric — grouped by the current "Group by" dimension
     destroyChart('h_top');
@@ -1948,6 +1959,8 @@ function initDashboard(){
 
     const kpiRow = document.getElementById('hl_kpiRow'); kpiRow.innerHTML='';
     const chartGrid = document.getElementById('hl_chartGrid'); chartGrid.innerHTML='';
+    const kpiFrag = document.createDocumentFragment();
+    const chartFrag = document.createDocumentFragment();
 
     HUB_METRICS.forEach((metric,i)=>{
       const {meta, last, ytd} = aggregateHubMetric([h], metric);
@@ -1956,14 +1969,16 @@ function initDashboard(){
       const kpi = document.createElement('div'); kpi.className='kpi glass tilt sev-neu clickable';
       kpi.innerHTML = `<div class="kpi-label">${meta.label}</div><div class="kpi-value">${fmtVal(isPct?last:ytd, meta.unit)}</div>
         <div class="kpi-delta flat">${isPct? 'latest reading' : 'YTD total'}</div><div class="kpi-spark-wrap"></div>`;
-      kpiRow.appendChild(kpi);
+      kpiFrag.appendChild(kpi);
 
       const cardId = 'hl_chart-'+i;
       const card = document.createElement('div'); card.className='card glass tilt';
       card.innerHTML = `<div class="card-hdr"><div class="card-title">${meta.label} <span class="tag">${meta.unit}</span></div></div>
         <div class="chart-box short"><canvas id="${cardId}"></canvas></div>`;
-      chartGrid.appendChild(card);
+      chartFrag.appendChild(card);
     });
+    kpiRow.appendChild(kpiFrag);
+    chartGrid.appendChild(chartFrag);
 
     HUB_METRICS.forEach((metric,i)=>{
       const {meta, dense} = aggregateHubMetric([h], metric);
@@ -2014,6 +2029,8 @@ function initDashboard(){
 
     const kpiRow = document.getElementById('am_kpiRow'); kpiRow.innerHTML='';
     const chartGrid = document.getElementById('am_chartGrid'); chartGrid.innerHTML='';
+    const kpiFrag = document.createDocumentFragment();
+    const chartFrag = document.createDocumentFragment();
 
     HUB_METRICS.forEach((metric,i)=>{
       const {meta, last, ytd} = aggregateHubMetric(hubs, metric);
@@ -2022,7 +2039,7 @@ function initDashboard(){
       const kpi = document.createElement('div'); kpi.className='kpi glass tilt sev-neu';
       kpi.innerHTML = `<div class="kpi-label">${meta.label}</div><div class="kpi-value"></div>
         <div class="kpi-delta flat">${isPct? 'latest reading (avg)' : 'YTD total'} · ${hubs.length} hubs</div><div class="kpi-spark-wrap"></div>`;
-      kpiRow.appendChild(kpi);
+      kpiFrag.appendChild(kpi);
       const cacheKey = 'am_kpi_'+metric;
       const shown = isPct?last:ytd;
       animateNumber(kpi.querySelector('.kpi-value'), kpiValCache[cacheKey], shown, v=>fmtVal(v, meta.unit));
@@ -2032,8 +2049,10 @@ function initDashboard(){
       const card = document.createElement('div'); card.className='card glass tilt';
       card.innerHTML = `<div class="card-hdr"><div class="card-title">${meta.label} <span class="tag">${meta.unit}</span></div></div>
         <div class="chart-box short"><canvas id="${cardId}"></canvas></div>`;
-      chartGrid.appendChild(card);
+      chartFrag.appendChild(card);
     });
+    kpiRow.appendChild(kpiFrag);
+    chartGrid.appendChild(chartFrag);
 
     HUB_METRICS.forEach((metric,i)=>{
       const {meta, dense} = aggregateHubMetric(hubs, metric);
@@ -2067,6 +2086,7 @@ function initDashboard(){
     const rm = rmVal;
 
     const heroRow = document.getElementById('rm_heroRow'); heroRow.innerHTML='';
+    const heroFrag = document.createDocumentFragment();
     const heroSpecs = [
       {label:'SPF + Fraud Loss (YTD)', metrics:['LM SPF loss * Overall','Overall Fraud Loss (MPFBF)'], unit:'₹L', agg:'sum'},
       {label:'Overall Pendency (YTD)', metrics:['Overall Pendency(FA+NFA) *  (>2 Days) (DH+ODH+MDH)*Count'], unit:'count', agg:'sum'},
@@ -2082,14 +2102,16 @@ function initDashboard(){
       kpi.innerHTML = `<div class="kpi-label">${spec.label}</div><div class="kpi-value"></div>
         <div class="kpi-delta flat">FY2026 · ${rm}</div><div class="kpi-spark-wrap"></div>`;
       if(spec.metrics.length===1) kpi.addEventListener('click', ()=> drillRmMetric(rm, spec.metrics[0]));
-      heroRow.appendChild(kpi);
+      heroFrag.appendChild(kpi);
       const cacheKey = 'rm_hero_'+spec.label;
       animateNumber(kpi.querySelector('.kpi-value'), kpiValCache[cacheKey], val, v=>fmtVal(v, spec.unit));
       kpiValCache[cacheKey] = val;
     });
+    heroRow.appendChild(heroFrag);
 
     document.getElementById('rm_gridTag').textContent = ALL_METRICS.length + ' metrics';
     const grid = document.getElementById('rm_metricGrid'); grid.innerHTML='';
+    const gridFrag = document.createDocumentFragment();
     ALL_METRICS.forEach((m,i)=>{
       const meta = METRIC_META[m];
       const {last, deltaPct} = weekDelta(m, rm);
@@ -2102,11 +2124,12 @@ function initDashboard(){
         <div class="mtile-delta ${deltaClass}">${arrow} ${Math.abs(deltaPct).toFixed(1)}% WoW</div>
         <div class="mtile-spark"><canvas id="rm_tile-${i}"></canvas></div>`;
       tile.addEventListener('click', ()=> drillRmMetric(rm, m));
-      grid.appendChild(tile);
+      gridFrag.appendChild(tile);
       const cacheKey = 'rm_grid_'+m;
       animateNumber(tile.querySelector('.mtile-value'), kpiValCache[cacheKey], last, v=>fmtVal(v, meta.unit));
       kpiValCache[cacheKey] = last;
     });
+    grid.appendChild(gridFrag);
     ALL_METRICS.forEach((m,i)=>{
       const id='rm_tile-'+i; destroyChart(id);
       const el = document.getElementById(id); if(!el) return;
@@ -2263,6 +2286,7 @@ function initDashboard(){
 
   function renderFullKPIs(){
     const row = document.getElementById('f_kpiRow'); row.innerHTML='';
+    const frag = document.createDocumentFragment();
     const metric = fState.metric, meta = METRIC_META[metric];
     const rmsForKpi = fState.rm==="Grand Total" ? DATA.rms.slice(0,6) : [fState.rm];
     rmsForKpi.forEach((rm,i)=>{
@@ -2274,11 +2298,12 @@ function initDashboard(){
         <div class="kpi-delta flat">${meta.unit==='%'?'range avg':'range total'}: ${fmtVal(ytd, meta.unit)}</div>
         <div class="kpi-spark-wrap"><canvas id="f_kpispark-${i}"></canvas></div>`;
       kpi.addEventListener('click', ()=> drillRmMetric(rm, metric));
-      row.appendChild(kpi);
+      frag.appendChild(kpi);
       const cacheKey = 'f_kpi_'+rm;
       animateNumber(kpi.querySelector('.kpi-value'), kpiValCache[cacheKey], last, v=>fmtVal(v, meta.unit));
       kpiValCache[cacheKey] = last;
     });
+    row.appendChild(frag);
     rmsForKpi.forEach((rm,i)=>{
       const id = 'f_kpispark-'+i; destroyChart(id);
       const el = document.getElementById(id); if(!el) return;
@@ -2353,7 +2378,7 @@ function initDashboard(){
       return `<tr data-rm="${r.rm}"><td class="name" style="color:${RM_COLORS[r.rm]}">${r.rm}</td>
         <td><span class="badge ${prcBadge}">${r.prc!==null?r.prc.toFixed(2)+'%':'—'}</span></td>
         <td>${r.untrace.toLocaleString('en-IN')}</td>
-        <td><span class="bar-cell"><span class="bar-fill" style="width:${(r.spf/maxSpf*100).toFixed(0)}%;background:${RM_COLORS[r.rm]}"></span></span><span style="margin-left:6px;">${fmtMoney(r.spf)}</span></td>
+        <td><span class="bar-cell"><span class="bar-fill" style="transform:scaleX(${(r.spf/maxSpf).toFixed(3)});background:${RM_COLORS[r.rm]}"></span></span><span style="margin-left:6px;">${fmtMoney(r.spf)}</span></td>
         <td>${fmtMoney(r.fraud)}</td><td>${r.pendency.toLocaleString('en-IN')}</td>
         <td><div class="spark-td"><canvas id="${sparkId}"></canvas></div></td></tr>`;
     }).join('');
