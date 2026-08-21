@@ -149,19 +149,41 @@ h1{margin:0;font-size:27px;font-weight:900;letter-spacing:-.02em;
 .refresh-btn.spinning svg{animation:spin .6s linear;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
-/* ---------- SIDEBAR NAV ---------- */
+/* ---------- SIDEBAR NAV ----------
+   .sidebar-rail is the layout-participating box (fixed 64px, so hovering the
+   sidebar open never reflows .main-col). The actual .sidebar overlays it via
+   position:absolute, expanding from a 64px icon rail to 230px on hover or
+   when pinned. Text is wrapped in .tabbtn-label so it can fade/clip
+   independently of the icon. */
+.sidebar-rail{width:64px;flex-shrink:0;position:sticky;top:20px;max-height:calc(100vh - 40px);}
 .sidebar{
-  width:230px;flex-shrink:0;border-radius:16px;
-  padding:10px;position:sticky;top:20px;display:flex;flex-direction:column;gap:4px;
-  max-height:calc(100vh - 40px);overflow-y:auto;overscroll-behavior:contain;
+  width:64px;border-radius:16px;position:absolute;top:0;left:0;
+  padding:10px;display:flex;flex-direction:column;gap:4px;
+  max-height:calc(100vh - 40px);overflow:hidden;overscroll-behavior:contain;
+  transition:width .22s cubic-bezier(0.16,1,0.3,1), box-shadow .22s;
+  z-index:40;
 }
-.sidebar-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--ink-dim);text-transform:uppercase;padding:8px 10px 6px;}
+.sidebar:hover, .sidebar.pinned{
+  width:230px;overflow-y:auto;box-shadow:0 16px 40px rgba(30,30,40,.22);
+}
+.sidebar-pin{
+  align-self:flex-end;width:28px;height:28px;flex-shrink:0;margin-bottom:2px;
+  display:flex;align-items:center;justify-content:center;border:none;border-radius:8px;
+  background:transparent;color:var(--ink-dim);cursor:pointer;transition:.2s;opacity:0;pointer-events:none;
+}
+.sidebar-pin svg{width:14px;height:14px;}
+.sidebar:hover .sidebar-pin, .sidebar.pinned .sidebar-pin{opacity:1;pointer-events:auto;}
+.sidebar-pin:hover{background:rgba(0,0,0,.06);color:var(--ink);}
+.sidebar.pinned .sidebar-pin{color:var(--blue);}
+.sidebar-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--ink-dim);text-transform:uppercase;padding:8px 10px 6px;white-space:nowrap;}
 .tabbtn{
   text-align:left;padding:12px 14px;border-radius:10px;border:none;background:transparent;color:var(--ink-dim);
   font-family:var(--sans);font-size:13.5px;font-weight:700;cursor:pointer;transition:.25s cubic-bezier(0.16,1,0.3,1);white-space:nowrap;
-  display:flex;align-items:center;gap:10px;letter-spacing:.01em;width:100%;position:relative;
+  display:flex;align-items:center;gap:10px;letter-spacing:.01em;width:100%;position:relative;overflow:hidden;
 }
 .tabbtn svg{width:16px;height:16px;flex-shrink:0;transition:transform .18s;}
+.tabbtn-label{opacity:0;transition:opacity .15s;}
+.sidebar:hover .tabbtn-label, .sidebar.pinned .tabbtn-label{opacity:1;}
 .tabbtn:hover{color:var(--ink);background:rgba(0,0,0,.05);transform:translateX(2px);}
 .tabbtn:hover svg{transform:scale(1.1);}
 .tabbtn:active{transform:translateX(2px) scale(.98);}
@@ -172,16 +194,19 @@ h1{margin:0;font-size:27px;font-weight:900;letter-spacing:-.02em;
 }
 .tabbtn.active:hover{transform:translateX(2px);}
 .sidebar-divider{height:1px;background:var(--line);margin:8px 4px;}
-.sidebar-info{padding:10px;font-family:var(--mono);font-size:11px;color:var(--ink-dim);line-height:1.7;}
+.sidebar-info{padding:10px;font-family:var(--mono);font-size:11px;color:var(--ink-dim);line-height:1.7;white-space:nowrap;}
 .sidebar-info b{color:var(--ink);}
 .sidebar-info .row{display:flex;justify-content:space-between;gap:8px;}
-.sidebar-foot{padding:10px;font-family:var(--mono);font-size:9.5px;color:var(--ink-dim);line-height:1.6;opacity:.8;}
+.sidebar-foot{padding:10px;font-family:var(--mono);font-size:9.5px;color:var(--ink-dim);line-height:1.6;opacity:.8;white-space:nowrap;}
 .tabpanel{display:none;}
 .tabpanel.active{display:block;}
 @media (max-width:900px){
   .body-layout{flex-direction:column;}
-  .sidebar{width:100%;position:static;flex-direction:row;overflow-x:auto;max-height:none;}
-  .sidebar-label, .sidebar-divider, .sidebar-info, .sidebar-foot{display:none;}
+  .sidebar-rail{width:100%;position:static;max-height:none;}
+  .sidebar{position:static;width:100%;flex-direction:row;overflow-x:auto;max-height:none;}
+  .sidebar:hover, .sidebar.pinned{width:100%;}
+  .sidebar-label, .sidebar-divider, .sidebar-info, .sidebar-foot, .sidebar-pin{display:none;}
+  .tabbtn-label{opacity:1;}
 }
 
 /* ---------- FILTER BAR ---------- */
@@ -460,48 +485,52 @@ body.modal-lock{overflow:hidden;}
   </div>
 
   <div class="body-layout">
+  <div class="sidebar-rail">
   <div class="sidebar glass" id="tabbar" role="tablist" aria-label="Dashboard sections">
+    <button class="sidebar-pin" id="sidebarPin" title="Pin sidebar open">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5"></path><path d="M8 10V4h8v6l2 4H6l2-4z"></path></svg>
+    </button>
     <div class="sidebar-label">Navigate</div>
     <button class="tabbtn active" data-tab="cmd" role="tab" aria-selected="true" aria-controls="panel-cmd" id="tabbtn-cmd">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>
-      Command Center
+      <span class="tabbtn-label">Command Center</span>
     </button>
     <button class="tabbtn" data-tab="week" role="tab" aria-selected="false" aria-controls="panel-week" id="tabbtn-week">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-      Week View
+      <span class="tabbtn-label">Week View</span>
     </button>
     <button class="tabbtn" data-tab="month" role="tab" aria-selected="false" aria-controls="panel-month" id="tabbtn-month">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"></path><rect x="7" y="12" width="3" height="6"></rect><rect x="12" y="8" width="3" height="10"></rect><rect x="17" y="5" width="3" height="13"></rect></svg>
-      Month-on-Month
+      <span class="tabbtn-label">Month-on-Month</span>
     </button>
     <button class="tabbtn" data-tab="hub" role="tab" aria-selected="false" aria-controls="panel-hub" id="tabbtn-hub">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"></path><path d="M5 21V7l7-4 7 4v14"></path><path d="M9 9h1M9 13h1M14 9h1M14 13h1"></path></svg>
-      Explorer
+      <span class="tabbtn-label">Explorer</span>
     </button>
     <button class="tabbtn" data-tab="hublookup" role="tab" aria-selected="false" aria-controls="panel-hublookup" id="tabbtn-hublookup">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      Hub Lookup
+      <span class="tabbtn-label">Hub Lookup</span>
     </button>
     <button class="tabbtn" data-tab="am" role="tab" aria-selected="false" aria-controls="panel-am" id="tabbtn-am">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"></path></svg>
-      AM View
+      <span class="tabbtn-label">AM View</span>
     </button>
     <button class="tabbtn" data-tab="rm" role="tab" aria-selected="false" aria-controls="panel-rm" id="tabbtn-rm">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"></path><circle cx="12" cy="9" r="2.5"></circle></svg>
-      RM View
+      <span class="tabbtn-label">RM View</span>
     </button>
     <button class="tabbtn" data-tab="sheet" role="tab" aria-selected="false" aria-controls="panel-sheet" id="tabbtn-sheet">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line></svg>
-      Sheet View
+      <span class="tabbtn-label">Sheet View</span>
     </button>
     <button class="tabbtn" data-tab="full" role="tab" aria-selected="false" aria-controls="panel-full" id="tabbtn-full">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-      Full View
+      <span class="tabbtn-label">Full View</span>
     </button>
     <div class="sidebar-divider"></div>
     <div class="sidebar-label">At a Glance</div>
     <div class="sidebar-info" id="sidebarInfo">
-      <div class="row"><span>Regions</span><b id="si_rms">—</b></div>
+      <div class="row"><span>RMs</span><b id="si_rms">—</b></div>
       <div class="row"><span>Hubs</span><b id="si_hubs">—</b></div>
       <div class="row"><span>Metrics</span><b id="si_metrics">—</b></div>
       <div class="row"><span>Latest week</span><b id="si_week">—</b></div>
@@ -510,12 +539,13 @@ body.modal-lock{overflow:hidden;}
     <div class="sidebar-divider"></div>
     <div class="sidebar-foot">WSOC ONE Team<br>Flipkart WSOC · GM Ashish Ranjan<br>Built on live Google Sheets data</div>
   </div>
+  </div>
 
   <div class="main-col">
   <!-- ================= GLOBAL DRILLDOWN FILTER ================= -->
   <div class="card glass tilt gfbar" id="gfBar">
     <div class="gfbar-group">
-      <span class="gfbar-label">Region</span>
+      <span class="gfbar-label">RM</span>
       <div class="gfbar-pills" id="gf_rmPills"></div>
     </div>
     <div class="gfbar-group">
@@ -722,7 +752,7 @@ body.modal-lock{overflow:hidden;}
     <div class="filterbar glass">
       <div><label>AM name</label><input type="text" id="am_search" list="am_amList" placeholder="Type an AM name…" style="min-width:280px;"></div>
       <datalist id="am_amList"></datalist>
-      <div class="hint" style="margin:0;">Search any AM to see the hubs, regions, and partners they span, plus every tracked primary metric aggregated across their scope.</div>
+      <div class="hint" style="margin:0;">Search any AM to see the hubs, RMs, and partners they span, plus every tracked metric aggregated across their scope.</div>
     </div>
     <div id="am_empty" class="card glass tilt" style="text-align:center;padding:40px 20px;color:var(--ink-dim);">
       Start typing an AM name above to look it up.
@@ -758,11 +788,11 @@ body.modal-lock{overflow:hidden;}
   <!-- ================= RM VIEW ================= -->
   <div class="tabpanel" id="panel-rm" role="tabpanel" aria-labelledby="tabbtn-rm">
     <div class="filterbar glass">
-      <div><label>Region</label><select id="rm_rmSelect"></select></div>
-      <div class="hint" style="margin:0;">Full one-region dashboard across all 26 tracked metrics — latest value, WoW delta, and trend for each.</div>
+      <div><label>RM</label><select id="rm_rmSelect"></select></div>
+      <div class="hint" style="margin:0;">Full one-RM dashboard across all 26 tracked metrics — latest value, WoW delta, and trend for each.</div>
     </div>
     <div id="rm_empty" class="card glass tilt" style="text-align:center;padding:40px 20px;color:var(--ink-dim);">
-      Select a region above to see its full dashboard.
+      Select an RM above to see its full dashboard.
     </div>
     <div id="rm_content" style="display:none;">
       <div class="kpirow" id="rm_heroRow"></div>
@@ -1301,7 +1331,7 @@ function drillRmMetric(rm, metric){
   const best = valid.length ? (meta.invert ? Math.max(...valid) : Math.min(...valid)) : null;
   const worst = valid.length ? (meta.invert ? Math.min(...valid) : Math.max(...valid)) : null;
 
-  dm.eyebrow.textContent = rm==='Grand Total' ? 'All Regions' : 'Regional Manager';
+  dm.eyebrow.textContent = rm==='Grand Total' ? 'All RMs' : 'Regional Manager';
   dm.title.textContent = meta.label;
   dm.sub.textContent = `${rm} · Weeks ${DATA.weeks[0]}–${DATA.weeks[DATA.weeks.length-1]} · FY2026`;
   dm.stats.innerHTML = [
@@ -1437,6 +1467,17 @@ function openDrilldownUI(){
   document.body.classList.add('modal-lock');
 }
 
+// ---------- SIDEBAR PIN ----------
+// Hover expands the collapsed icon rail; pinning keeps it expanded without a
+// mouse (persisted so the preference survives a reload).
+const sidebarEl = document.getElementById('tabbar');
+const sidebarPinBtn = document.getElementById('sidebarPin');
+if(localStorage.getItem('sidebarPinned') === '1') sidebarEl.classList.add('pinned');
+sidebarPinBtn.addEventListener('click', ()=>{
+  const pinned = sidebarEl.classList.toggle('pinned');
+  localStorage.setItem('sidebarPinned', pinned ? '1' : '0');
+});
+
 // ---------- TABS ----------
 let activeTab = 'cmd';
 document.querySelectorAll('.tabbtn').forEach(btn=>{
@@ -1495,18 +1536,6 @@ function initDashboard(){
   }
   const ALL_AMS = Object.keys(AM_RM_MAP).sort();
 
-  // Narrows a Region(RM) <select> to the RMs associated with `am` (plus the
-  // tab's own "all regions" option). If the select's current value no
-  // longer exists in the narrowed list it resets to the all-value. Returns
-  // the resulting (possibly reset) value so callers can update their state.
-  function narrowRmSelect(selectEl, am, allValue, allLabel, currentVal){
-    const rms = am==='all' ? DATA.rms : DATA.rms.filter(rm=> AM_RM_MAP[am] && AM_RM_MAP[am].has(rm));
-    selectEl.innerHTML = `<option value="${allValue}">${allLabel}</option>` + rms.map(r=>`<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
-    const stillValid = currentVal===allValue || rms.includes(currentVal);
-    selectEl.value = stillValid ? currentVal : allValue;
-    return selectEl.value;
-  }
-
   /* ====================================================================
      GLOBAL DRILLDOWN FILTER — RM pill-toggle + AM/Hub chip multi-select,
      pinned above every tab. Narrows Command Center/Week/Month/Hub/Sheet/Full
@@ -1516,6 +1545,7 @@ function initDashboard(){
      ==================================================================== */
   const ALL_HUB_NAMES = [...new Set(HUB.rows.map(h=>h[1]))].sort();
   const ALL_PARTNERS = [...new Set(HUB.rows.map(h=>h[4]).filter(Boolean))].sort();
+  const ALL_HUB_TYPES = [...new Set(HUB.rows.map(h=>h[3]).filter(Boolean))].sort();
 
   const gfRmPills = document.getElementById('gf_rmPills');
   DATA.rms.forEach(rm=>{
@@ -1570,7 +1600,6 @@ function initDashboard(){
     renderGfChips('hub', 'gf_hubChips');
     const n = gFilter.rm.size + gFilter.am.size + gFilter.hub.size;
     document.getElementById('gf_count').textContent = n ? `(${n})` : '';
-    refreshHubFilterOptions();
     renderActiveTab();
   }
 
@@ -1991,7 +2020,7 @@ function initDashboard(){
   /* ======================================================================
      HUB VIEW — hub-level explorer (827 hubs, all 26 metrics carried per hub)
      ====================================================================== */
-  let hState = { rm:'all', type:'all', am:'all', partner:'all', search:'', metric:'LM SPF loss * Overall', sortKey:'spf', sortDir:-1, groupBy:'hub' };
+  let hState = { rm:new Set(), type:new Set(), am:new Set(), partner:new Set(), search:'', metric:'LM SPF loss * Overall', sortKey:'spf', sortDir:-1, groupBy:'hub' };
 
   // Grouping dimensions for the Explorer's "Group by" selector — index into a
   // HUB.rows row (am=0, hub=1, rm=2, type=3, partner=4).
@@ -1999,50 +2028,10 @@ function initDashboard(){
   const GROUP_DIM_LABEL = { am:'AM', hub:'Hub', rm:'RM', partner:'Partner' };
   const GROUP_DIM_PLURAL = { am:'AMs', hub:'hubs', rm:'RMs', partner:'Partners' };
 
-  const hRmSel = document.getElementById('h_rmFilter');
-  const hTypeSel = document.getElementById('h_typeFilter');
-  const hAmSel = document.getElementById('h_amFilter');
-  const hPartnerSel = document.getElementById('h_partnerFilter');
-
-  // Cross-filter fix: these four selects used to each list every value seen
-  // across ALL hubs, independent of the other three — so picking an AM
-  // never narrowed which RM/Type/Partner options made sense, and an
-  // impossible combination just silently produced zero rows ("filters that
-  // seem to stop working"). Each select's option list is now rebuilt from
-  // the hubs that match the OTHER three active filters, so only real
-  // combinations can be picked; a selection that's no longer valid resets
-  // to "all" instead of leaving a dead filter behind.
-  function hubFacetValues(dimIdx, excludeKey){
-    return HUB.rows.filter(r=>{
-      if(excludeKey!=='rm' && hState.rm!=='all' && r[2]!==hState.rm) return false;
-      if(excludeKey!=='type' && hState.type!=='all' && r[3]!==hState.type) return false;
-      if(excludeKey!=='am' && hState.am!=='all' && r[0]!==hState.am) return false;
-      if(excludeKey!=='partner' && hState.partner!=='all' && r[4]!==hState.partner) return false;
-      if(gFilter.rm.size && !gFilter.rm.has(r[2])) return false;
-      if(gFilter.am.size && !gFilter.am.has(r[0])) return false;
-      if(gFilter.hub.size && !gFilter.hub.has(r[1])) return false;
-      return true;
-    }).map(r=>r[dimIdx]).filter(Boolean);
-  }
-  function refreshHubSelect(selectEl, dimIdx, excludeKey, currentVal, allLabel){
-    const vals = [...new Set(hubFacetValues(dimIdx, excludeKey))].sort();
-    selectEl.innerHTML = `<option value="all">${allLabel}</option>` + vals.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
-    const stillValid = currentVal==='all' || vals.includes(currentVal);
-    selectEl.value = stillValid ? currentVal : 'all';
-    return selectEl.value;
-  }
-  function refreshHubFilterOptions(){
-    hState.rm = refreshHubSelect(hRmSel, 2, 'rm', hState.rm, 'All Regions');
-    hState.type = refreshHubSelect(hTypeSel, 3, 'type', hState.type, 'All types');
-    hState.am = refreshHubSelect(hAmSel, 0, 'am', hState.am, 'All AMs');
-    hState.partner = refreshHubSelect(hPartnerSel, 4, 'partner', hState.partner, 'All Partners');
-  }
-  refreshHubFilterOptions();
-
-  hRmSel.addEventListener('change', e=>{ hState.rm=e.target.value; refreshHubFilterOptions(); renderHubTab(); });
-  hTypeSel.addEventListener('change', e=>{ hState.type=e.target.value; refreshHubFilterOptions(); renderHubTab(); });
-  hAmSel.addEventListener('change', e=>{ hState.am=e.target.value; refreshHubFilterOptions(); renderHubTab(); });
-  hPartnerSel.addEventListener('change', e=>{ hState.partner=e.target.value; refreshHubFilterOptions(); renderHubTab(); });
+  buildPillMultiSelect(document.getElementById('h_rmPills'), DATA.rms, hState.rm, ()=>renderHubTab());
+  buildPillMultiSelect(document.getElementById('h_typePills'), ALL_HUB_TYPES, hState.type, ()=>renderHubTab());
+  buildChipMultiSelect(document.getElementById('h_amInput'), document.getElementById('h_amList'), document.getElementById('h_amChips'), ALL_AMS, hState.am, ()=>renderHubTab());
+  buildChipMultiSelect(document.getElementById('h_partnerInput'), document.getElementById('h_partnerList'), document.getElementById('h_partnerChips'), ALL_PARTNERS, hState.partner, ()=>renderHubTab());
 
   document.getElementById('h_groupBy').addEventListener('change', e=>{ hState.groupBy=e.target.value; renderHubTab(); });
 
@@ -2094,10 +2083,10 @@ function initDashboard(){
 
   function filteredHubs(){
     return HUB.rows.filter(r=>{
-      if(hState.rm!=='all' && r[2]!==hState.rm) return false;
-      if(hState.type!=='all' && r[3]!==hState.type) return false;
-      if(hState.am!=='all' && r[0]!==hState.am) return false;
-      if(hState.partner!=='all' && r[4]!==hState.partner) return false;
+      if(hState.rm.size && !hState.rm.has(r[2])) return false;
+      if(hState.type.size && !hState.type.has(r[3])) return false;
+      if(hState.am.size && !hState.am.has(r[0])) return false;
+      if(hState.partner.size && !hState.partner.has(r[4])) return false;
       if(hState.search && !r[1].toLowerCase().includes(hState.search)) return false;
       if(gFilter.rm.size && !gFilter.rm.has(r[2])) return false;
       if(gFilter.am.size && !gFilter.am.has(r[0])) return false;
@@ -2385,7 +2374,7 @@ function initDashboard(){
 
     document.getElementById('am_amName').textContent = am;
     document.getElementById('am_amSub').textContent =
-      `${hubs.length} hub${hubs.length===1?'':'s'} · Regions: ${rms.join(', ')||'—'} · Partners: ${partners.length}`;
+      `${hubs.length} hub${hubs.length===1?'':'s'} · RMs: ${rms.join(', ')||'—'} · Partners: ${partners.length}`;
 
     const kpiRow = document.getElementById('am_kpiRow'); kpiRow.innerHTML='';
     const chartGrid = document.getElementById('am_chartGrid'); chartGrid.innerHTML='';
@@ -2458,7 +2447,7 @@ function initDashboard(){
      is effectively "Command Center scoped to one RM" rather than new logic.
      ====================================================================== */
   const rmRmSel = document.getElementById('rm_rmSelect');
-  rmRmSel.innerHTML = '<option value="">Select a region…</option>' + DATA.rms.map(r=>`<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+  rmRmSel.innerHTML = '<option value="">Select an RM…</option>' + DATA.rms.map(r=>`<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
   rmRmSel.addEventListener('change', e=>{ renderRmTab(e.target.value); });
 
   function renderRmTab(rmVal){
@@ -2524,22 +2513,26 @@ function initDashboard(){
   }
 
   /* ======================================================================
-     SHEET VIEW — raw grid replica: GM/RM rows, per-week columns, sparkline,
-     conditional coloring, grand totals. Mirrors the source sheet layout.
+     SHEET VIEW — raw grid replica of the source sheet's three stacked
+     tables: RM (GM→RM rollup), AM (RM→AM rollup), and Hub (AM→Hub, the
+     827-row leaf grid — numeric cells only, no per-row sparkline, since 827
+     canvases would be needless weight for a grid view).
      ====================================================================== */
-  let sState = { rm:'all', am:'all', metric: "PRC Non*adherance", weekWindow: 12 };
+  let sState = { rm:new Set(), am:new Set(), metric: "PRC Non*adherance", weekWindow: 12, gridMode:'rm', hubSearch:'' };
 
-  const sAmSel = document.getElementById('s_amFilter');
-  sAmSel.innerHTML = '<option value="all">All AMs</option>' + ALL_AMS.map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
-  sAmSel.addEventListener('change', e=>{
-    sState.am = e.target.value;
-    sState.rm = narrowRmSelect(sRmSel, sState.am, 'all', 'All Regions', sState.rm);
-    renderSheetTab();
+  buildChipMultiSelect(document.getElementById('s_amInput'), document.getElementById('s_amList'), document.getElementById('s_amChips'), ALL_AMS, sState.am, ()=>renderSheetTab());
+  buildPillMultiSelect(document.getElementById('s_rmPills'), DATA.rms, sState.rm, ()=>renderSheetTab());
+
+  document.querySelectorAll('#s_gridModeToggle .pill').forEach(p=>{
+    p.addEventListener('click', ()=>{
+      document.querySelectorAll('#s_gridModeToggle .pill').forEach(x=>x.classList.remove('active'));
+      p.classList.add('active');
+      sState.gridMode = p.dataset.mode;
+      document.getElementById('s_hubSearchWrap').style.display = sState.gridMode==='hub' ? '' : 'none';
+      renderSheetTab();
+    });
   });
-
-  const sRmSel = document.getElementById('s_rmFilter');
-  narrowRmSelect(sRmSel, sState.am, 'all', 'All Regions', sState.rm);
-  sRmSel.addEventListener('change', e=>{ sState.rm=e.target.value; renderSheetTab(); });
+  document.getElementById('s_hubSearch').addEventListener('input', debounce(e=>{ sState.hubSearch=e.target.value.toLowerCase(); renderSheetTab(); }, 220));
 
   document.getElementById('s_weekWindow').addEventListener('change', e=>{ sState.weekWindow=parseInt(e.target.value); renderSheetTab(); });
 
@@ -2553,75 +2546,128 @@ function initDashboard(){
     }
     return val===0?'good':(val<=5?'warn':'bad');
   }
+  function sCellCls(meta, v){
+    const sev = sSeverity(meta, v);
+    return sev==='good'?'cell-good':(sev==='warn'?'cell-warn':(sev==='bad'?'cell-bad':''));
+  }
 
   function renderSheetTab(){
     const metric = sState.metric, meta = METRIC_META[metric];
     document.getElementById('s_metricTag').textContent = meta.label;
+    if(sState.gridMode==='rm') renderSheetRmGrid(metric, meta);
+    else if(sState.gridMode==='am') renderSheetAmGrid(metric, meta);
+    else renderSheetHubGrid(metric, meta);
+  }
 
+  function renderSheetRmGrid(metric, meta){
+    document.getElementById('s_gridSub').textContent = 'Click a metric chip to switch the grid below · sheet-style GM → RM rollup';
     const weeksAll = DATA.weeks;
     const weeks = sState.weekWindow >= weeksAll.length ? weeksAll : weeksAll.slice(-sState.weekWindow);
 
-    // header rows: group label + week numbers + YTD + sparkline
     const thead = document.getElementById('s_table').querySelector('thead');
-    const grpRow = `<tr class="grp-row"><th class="pin pin-gm">GM</th><th class="pin pin-rm">RM</th>
-      <th colspan="${weeks.length + 2}">${meta.label} <span style="opacity:.6;font-weight:600;">(${meta.unit})</span></th></tr>`;
-    const subCells = weeks.map(w=>`<th>W${w}</th>`).join('') + `<th>YTD</th><th>Trend</th>`;
-    const subRow = `<tr class="sub-row"><th class="pin pin-gm"></th><th class="pin pin-rm"></th>${subCells}</tr>`;
-    thead.innerHTML = grpRow + subRow;
+    thead.innerHTML = `<tr class="grp-row"><th class="pin pin-gm">GM</th><th class="pin pin-rm">RM</th>
+      <th colspan="${weeks.length + 2}">${meta.label} <span style="opacity:.6;font-weight:600;">(${meta.unit})</span></th></tr>
+      <tr class="sub-row"><th class="pin pin-gm"></th><th class="pin pin-rm"></th>${weeks.map(w=>`<th>W${w}</th>`).join('')}<th>YTD</th><th>Trend</th></tr>`;
 
-    // rows: RM under a synthetic "All Regions" GM header, mirroring sheet's GM->RM structure.
-    const rmsToShow = sState.rm==='all' ? gInScopeRms() : [sState.rm];
-    const bodyRows = rmsToShow.map(rm=>{
+    const rmsToShow = sState.rm.size ? [...sState.rm].filter(r=>gInScopeRms().includes(r)) : gInScopeRms();
+    const rowHtml = (rm, isGt)=>{
       const fullArr = rmSeries(metric, rm);
-      const arr = weeks.map(w => fullArr[weeksAll.indexOf(w)]);
-      const cells = arr.map(v=>{
-        const sev = sSeverity(meta, v);
-        const cls = sev==='good'?'cell-good':(sev==='warn'?'cell-warn':(sev==='bad'?'cell-bad':''));
-        return `<td class="${cls}">${v===null||v===undefined?'—':fmtVal(v, meta.unit)}</td>`;
-      }).join('');
+      const cells = weeks.map(w => fullArr[weeksAll.indexOf(w)]).map(v=>`<td class="${sCellCls(meta,v)}">${v===null||v===undefined?'—':fmtVal(v, meta.unit)}</td>`).join('');
       const ytdVal = meta.unit==='%' ? ytdAvg(metric, rm) : ytdSum(metric, rm);
       const sparkId = 's_spark-'+rm.replace(/\s+/g,'');
-      return `<tr data-rm="${rm}">
+      return `<tr class="${isGt?'gt-row':''}" data-rm="${escapeHtml(rm)}">
         <td class="pin pin-gm name-cell">WSOC</td>
-        <td class="pin pin-rm name-cell" style="color:${RM_COLORS[rm]||'inherit'}">${rm}</td>
-        ${cells}
-        <td>${fmtVal(ytdVal, meta.unit)}</td>
+        <td class="pin pin-rm name-cell" style="color:${isGt?'inherit':(RM_COLORS[rm]||'inherit')}">${escapeHtml(rm)}</td>
+        ${cells}<td>${fmtVal(ytdVal, meta.unit)}</td>
         <td><div class="sheet-spark"><canvas id="${sparkId}"></canvas></div></td>
       </tr>`;
-    });
-
-    // Grand Total row
-    const gtArrFull = rmSeries(metric, 'Grand Total');
-    const gtArr = weeks.map(w => gtArrFull[weeksAll.indexOf(w)]);
-    const gtCells = gtArr.map(v=>{
-      const sev = sSeverity(meta, v);
-      const cls = sev==='good'?'cell-good':(sev==='warn'?'cell-warn':(sev==='bad'?'cell-bad':''));
-      return `<td class="${cls}">${v===null||v===undefined?'—':fmtVal(v, meta.unit)}</td>`;
-    }).join('');
-    const gtYtd = meta.unit==='%' ? ytdAvg(metric, 'Grand Total') : ytdSum(metric, 'Grand Total');
-    bodyRows.push(`<tr class="gt-row" data-rm="Grand Total">
-      <td class="pin pin-gm name-cell">WSOC</td>
-      <td class="pin pin-rm name-cell">Grand Total</td>
-      ${gtCells}
-      <td>${fmtVal(gtYtd, meta.unit)}</td>
-      <td><div class="sheet-spark"><canvas id="s_spark-GrandTotal"></canvas></div></td>
-    </tr>`);
-
+    };
+    const bodyRows = rmsToShow.map(rm=>rowHtml(rm,false));
+    bodyRows.push(rowHtml('Grand Total', true));
     document.getElementById('s_body').innerHTML = bodyRows.join('');
-    document.querySelectorAll('#s_body tr').forEach(tr=>{
-      tr.addEventListener('click', ()=> drillRmMetric(tr.dataset.rm, metric));
-    });
-
-    // sparklines
+    document.querySelectorAll('#s_body tr').forEach(tr=> tr.addEventListener('click', ()=> drillRmMetric(tr.dataset.rm, metric)));
     [...rmsToShow, 'Grand Total'].forEach(rm=>{
-      const id = 's_spark-'+rm.replace(/\s+/g,'');
-      destroyChart(id);
+      const id = 's_spark-'+rm.replace(/\s+/g,''); destroyChart(id);
       const el = document.getElementById(id); if(!el) return;
       const fullArr = rmSeries(metric, rm);
       const arr = weeks.map(w => { const v = fullArr[weeksAll.indexOf(w)]; return v===null||v===undefined?NaN:v; });
       charts[id] = new Chart(el, { type:'line', data:{ labels:arr.map((_,j)=>j), datasets:[{ data:arr, borderColor: RM_COLORS[rm]||'#2ee6d6', borderWidth:1.6, pointRadius:0, tension:.35, fill:true, backgroundColor:(RM_COLORS[rm]||'#2ee6d6')+'18', spanGaps:true }] },
         options:{ responsive:true, maintainAspectRatio:false, animation:{duration:0}, plugins:{legend:{display:false}, tooltip:{enabled:false}}, scales:{x:{display:false}, y:{display:false}} } });
     });
+  }
+
+  function renderSheetAmGrid(metric, meta){
+    document.getElementById('s_gridSub').textContent = 'Click a metric chip to switch the grid below · sheet-style RM → AM rollup';
+    const weeksAll = (AM && AM.weeks) ? AM.weeks : DATA.weeks;
+    const weeks = sState.weekWindow >= weeksAll.length ? weeksAll : weeksAll.slice(-sState.weekWindow);
+
+    const thead = document.getElementById('s_table').querySelector('thead');
+    thead.innerHTML = `<tr class="grp-row"><th class="pin pin-gm">RM</th><th class="pin pin-rm">AM</th>
+      <th colspan="${weeks.length + 2}">${meta.label} <span style="opacity:.6;font-weight:600;">(${meta.unit})</span></th></tr>
+      <tr class="sub-row"><th class="pin pin-gm"></th><th class="pin pin-rm"></th>${weeks.map(w=>`<th>W${w}</th>`).join('')}<th>YTD</th><th>Trend</th></tr>`;
+
+    let ams = gInScopeAms();
+    if(sState.rm.size) ams = ams.filter(a=> sState.rm.has(AM&&AM.amToRm?AM.amToRm[a]:null));
+    if(sState.am.size) ams = ams.filter(a=>sState.am.has(a));
+    ams.sort((a,b)=>{ const ra=(AM&&AM.amToRm?AM.amToRm[a]:'')||'', rb=(AM&&AM.amToRm?AM.amToRm[b]:'')||''; return ra===rb ? a.localeCompare(b) : ra.localeCompare(rb); });
+
+    const bodyRows = ams.map(am=>{
+      const rm = AM&&AM.amToRm ? AM.amToRm[am] : '';
+      const fullArr = amSeries(metric, am);
+      const cells = weeks.map(w => fullArr[weeksAll.indexOf(w)]).map(v=>`<td class="${sCellCls(meta,v)}">${v===null||v===undefined?'—':fmtVal(v, meta.unit)}</td>`).join('');
+      const ytdVal = meta.unit==='%' ? amYtdAvg(metric, am) : amYtdSum(metric, am);
+      const sparkId = 's_spark-'+am.replace(/\W+/g,'_');
+      return `<tr data-am="${escapeHtml(am)}">
+        <td class="pin pin-gm name-cell" style="color:${RM_COLORS[rm]||'inherit'}">${escapeHtml(rm||'—')}</td>
+        <td class="pin pin-rm name-cell">${escapeHtml(am)}</td>
+        ${cells}<td>${fmtVal(ytdVal, meta.unit)}</td>
+        <td><div class="sheet-spark"><canvas id="${sparkId}"></canvas></div></td>
+      </tr>`;
+    });
+    document.getElementById('s_body').innerHTML = bodyRows.length ? bodyRows.join('') : '<tr><td colspan="4" style="text-align:center;color:var(--ink-dim);padding:16px;">No AMs match the current filters.</td></tr>';
+    document.querySelectorAll('#s_body tr[data-am]').forEach(tr=> tr.addEventListener('click', ()=> drillAmMetric(tr.dataset.am, metric)));
+    ams.forEach(am=>{
+      const id = 's_spark-'+am.replace(/\W+/g,'_'); destroyChart(id);
+      const el = document.getElementById(id); if(!el) return;
+      const fullArr = amSeries(metric, am);
+      const arr = weeks.map(w => { const v = fullArr[weeksAll.indexOf(w)]; return v===null||v===undefined?NaN:v; });
+      charts[id] = new Chart(el, { type:'line', data:{ labels:arr.map((_,j)=>j), datasets:[{ data:arr, borderColor: meta.color, borderWidth:1.6, pointRadius:0, tension:.35, fill:true, backgroundColor:meta.color+'18', spanGaps:true }] },
+        options:{ responsive:true, maintainAspectRatio:false, animation:{duration:0}, plugins:{legend:{display:false}, tooltip:{enabled:false}}, scales:{x:{display:false}, y:{display:false}} } });
+    });
+  }
+
+  function renderSheetHubGrid(metric, meta){
+    document.getElementById('s_gridSub').textContent = 'Click a metric chip to switch the grid below · sheet-style AM → Hub grid (numeric only, no sparklines — 827 rows)';
+    const idx = hubColIdx(metric);
+    const thead = document.getElementById('s_table').querySelector('thead');
+    thead.innerHTML = `<tr class="grp-row"><th class="pin pin-gm">AM</th><th class="pin pin-rm">Hub</th>
+      <th colspan="3">${meta.label} <span style="opacity:.6;font-weight:600;">(${meta.unit})</span></th></tr>
+      <tr class="sub-row"><th class="pin pin-gm"></th><th class="pin pin-rm"></th><th>RM</th><th>Latest</th><th>YTD</th></tr>`;
+
+    let hubs = HUB.rows;
+    if(sState.rm.size) hubs = hubs.filter(h=>sState.rm.has(h[2]));
+    if(sState.am.size) hubs = hubs.filter(h=>sState.am.has(h[0]));
+    if(sState.hubSearch) hubs = hubs.filter(h=>h[1].toLowerCase().includes(sState.hubSearch));
+    const limited = hubs.slice(0, 400); // render cap for perf, same convention as Hub Explorer
+
+    document.getElementById('s_body').innerHTML = limited.map(h=>{
+      const sparse = idx>=0 ? (h[idx]||[]) : [];
+      const last = sparse.length ? sparse[sparse.length-1] : null;
+      const isPct = meta.unit==='%';
+      let ytd = null;
+      if(sparse.length){
+        const vals=[]; for(let i=1;i<sparse.length;i+=2) vals.push(sparse[i]);
+        ytd = isPct ? vals.reduce((a,b)=>a+b,0)/vals.length : vals.reduce((a,b)=>a+b,0);
+      }
+      return `<tr data-hub="${escapeHtml(h[1])}">
+        <td class="pin pin-gm name-cell">${escapeHtml(h[0]||'—')}</td>
+        <td class="pin pin-rm name-cell">${escapeHtml(h[1])}</td>
+        <td style="color:${RM_COLORS[h[2]]||'inherit'}">${escapeHtml(h[2]||'—')}</td>
+        <td class="${sCellCls(meta,last)}">${last===null?'—':fmtVal(last, meta.unit)}</td>
+        <td>${ytd===null?'—':fmtVal(ytd, meta.unit)}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--ink-dim);padding:16px;">No hubs match the current filters.</td></tr>';
+    document.querySelectorAll('#s_body tr[data-hub]').forEach(tr=> tr.addEventListener('click', ()=> drillHubByName(tr.dataset.hub, hubs)));
   }
 
   /* ======================================================================
