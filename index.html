@@ -1626,7 +1626,7 @@ function initDashboard(){
     const frag = document.createDocumentFragment();
     const heroSpecs = [
       {label:'SPF + Fraud Loss (YTD)', metrics:['LM SPF loss * Overall','Overall Fraud Loss (MPFBF)'], unit:'₹L', agg:'sum'},
-      {label:'Overall Pendency (YTD)', metrics:['Overall Pendency(FA+NFA) *  (>2 Days) (DH+ODH+MDH)*Count'], unit:'count', agg:'sum'},
+      {label:'Overall Pendency (latest week)', metrics:['Overall Pendency(FA+NFA) *  (>2 Days) (DH+ODH+MDH)*Count'], unit:'count', agg:'latest'},
       {label:'Untraceable (YTD)', metrics:['Untraceable (DH+ODH+MDH) * Count >1 Day'], unit:'count', agg:'sum'},
       {label:'Avg PRC Adherence', metrics:['PRC Non*adherance'], unit:'%', agg:'avg'},
       {label:'Avg CV Adherence', metrics:['CV Adherence'], unit:'%', agg:'avg'},
@@ -1636,10 +1636,11 @@ function initDashboard(){
       let val;
       if(spec.agg==='hubs'){ val = gActive() ? gInScopeHubs().length : HUB.rows.length; }
       else if(spec.agg==='sum'){ val = spec.metrics.reduce((s,m)=> s + ytdSum(m,'Grand Total'), 0); }
+      else if(spec.agg==='latest'){ val = spec.metrics.reduce((s,m)=> s + (lastValid(rmSeries(m,'Grand Total')).v||0), 0); }
       else { val = spec.metrics.reduce((s,m)=> s + (ytdAvg(m,'Grand Total')||0), 0) / spec.metrics.length; }
       const kpi = document.createElement('div'); kpi.className='kpi glass tilt sev-neu';
       kpi.innerHTML = `<div class="kpi-label">${spec.label}</div><div class="kpi-value">${fmtVal(val, spec.unit)}</div>
-        <div class="kpi-delta flat">FY2026 · through W${latestWeek}</div><div class="kpi-spark-wrap"></div>`;
+        <div class="kpi-delta flat">${spec.agg==='latest' ? `W${latestWeek} snapshot` : `FY2026 · through W${latestWeek}`}</div><div class="kpi-spark-wrap"></div>`;
       if(spec.metrics && spec.metrics.length===1){ kpi.classList.add('clickable'); kpi.addEventListener('click', ()=> drillRmMetric('Grand Total', spec.metrics[0])); }
       frag.appendChild(kpi);
     });
